@@ -21,6 +21,27 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+## Comandos
+
+Para crear modulos:
+
+```bash
+$ nest g mo my_name
+```
+
+Para crear controllers:
+
+```bash
+$ nest g co my_name
+```
+
+Para crear Servicios:
+
+```bash
+$ nest g s my_name 
+```
+
+
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
