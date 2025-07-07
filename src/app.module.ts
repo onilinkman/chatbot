@@ -1,9 +1,26 @@
 import { Module } from '@nestjs/common';
 import { BotModule } from './bot/bot.module';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PersonaModule } from './persona/persona.module';
 
 @Module({
-  imports: [BotModule],
+  imports: [
+    BotModule,
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRoot({
+      type: 'oracle',
+      host: process.env.DB_HOST ?? 'localhost',
+      port: Number(process.env.DB_PORT ?? '1521'),
+      username: process.env.DB_USERNAME ?? 'oracle',
+      password: process.env.DB_PWD ?? 'oracle10',
+      sid: process.env.DB_SID ?? 'ORCLCDB',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+    PersonaModule,
+  ],
   controllers: [],
-  providers: [],
 })
 export class AppModule {}

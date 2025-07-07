@@ -41,6 +41,12 @@ Para crear Servicios:
 $ nest g s my_name 
 ```
 
+Para crear toda la estructura de un API REST
+#### incluye DTO ENTITY, CONTROLLER,
+
+```bash
+$ nest g res my_name --no-spec
+```
 
 ## Description
 
