@@ -3,6 +3,7 @@ import { BotModule } from './bot/bot.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PersonaModule } from './persona/persona.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PersonaModule } from './persona/persona.module';
       synchronize: true,
     }),
     PersonaModule,
+    AuthModule,
   ],
   controllers: [],
 })

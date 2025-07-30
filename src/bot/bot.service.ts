@@ -13,7 +13,7 @@ export class BotService {
   private sock: WASocket | null = null;
 
   constructor() {
-    this.conectarWhatsapp();
+    //this.conectarWhatsapp();
   }
 
   async conectarWhatsapp() {

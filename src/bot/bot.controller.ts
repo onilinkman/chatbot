@@ -24,7 +24,7 @@ export class BotController {
     } catch (error) {}
   }
 
-  @Get('/conn')
+  @Get('/conectar')
   conectarWhatsapp(@Req() request: Request, @Res() response: Response) {
     this.botService.conectarWhatsapp();
     return response.status(200).send({
