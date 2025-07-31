@@ -1,91 +1,148 @@
 import { Injectable } from '@nestjs/common';
 import makeWASocket, {
-  DisconnectReason,
-  proto,
-  useMultiFileAuthState,
-  WASocket,
+    AuthenticationState,
+    DisconnectReason,
+    initAuthCreds,
+    proto,
+    SignalDataTypeMap,
+    useMultiFileAuthState,
+    WASocket,
 } from 'baileys';
 import P from 'pino';
 import { toString } from 'qrcode';
+import { CreateSesionWhatsappDto } from 'src/sesion_whatsapp/dto/create-sesion_whatsapp.dto';
+import { SesionWhatsappService } from 'src/sesion_whatsapp/sesion_whatsapp.service';
 
 @Injectable()
 export class BotService {
-  private sock: WASocket | null = null;
+    private sock: WASocket | null = null;
 
-  constructor() {
-    //this.conectarWhatsapp();
-  }
+    constructor(
+        private readonly sesionWhatsappService: SesionWhatsappService,
+    ) {}
 
-  async conectarWhatsapp() {
-    const { state, saveCreds } =
-      await useMultiFileAuthState('auth_info_baileys');
+    async conectarWhatsapp() {
+        const { state, saveCreds } = await this.useDatabaseAuthState(1);
 
-    this.sock = makeWASocket({
-      auth: state,
-      logger: P(),
-    });
-
-    this.sock.ev.on('creds.update', saveCreds);
-
-    this.sock.ev.on('connection.update', async (update) => {
-      const { qr } = update;
-      if (typeof qr === 'string' && qr.length > 0) {
-        const qrTerminal = await toString(qr, {
-          type: 'terminal',
-          small: true,
+        this.sock = makeWASocket({
+            auth: state,
+            logger: P(),
         });
-        console.log(qrTerminal);
-      }
-      const { connection, lastDisconnect } = update;
-      if (connection === 'close') {
-        const puedeConectar =
-          (lastDisconnect?.error as any)?.output?.statusCode !==
-          DisconnectReason.restartRequired;
-        if (puedeConectar) {
-          console.log('abrir de nuevo');
+
+        this.sock.ev.on('creds.update', saveCreds);
+
+        this.sock.ev.on('connection.update', async (update) => {
+            const { qr } = update;
+            if (typeof qr === 'string' && qr.length > 0) {
+                const qrTerminal = await toString(qr, {
+                    type: 'terminal',
+                    small: true,
+                });
+                console.log(qrTerminal);
+            }
+            const { connection, lastDisconnect } = update;
+            if (connection === 'close') {
+                const puedeConectar =
+                    (lastDisconnect?.error as any)?.output?.statusCode !==
+                    DisconnectReason.restartRequired;
+                if (puedeConectar) {
+                    console.log('conectando....');
+                    this.conectarWhatsapp();
+                }
+            } else if (connection == 'open') {
+                console.log('CONEXION ABIERTA');
+            }
+        });
+        this.sock.ev.on(
+            'messaging-history.set',
+            ({
+                chats: newChats,
+                contacts: newContacts,
+                messages: newMessages,
+                syncType,
+            }) => {
+                console.log('chats', newChats, newContacts, newMessages);
+            },
+        );
+        this.sock.ev.on('messages.upsert', ({ type, messages }) => {
+            if (type == 'notify') {
+                // new messages
+                for (const message of messages) {
+                    this.recibirMensajes(message);
+                }
+            } else {
+                // old already seen / handled messages
+                // handle them however you want to
+                console.log(messages);
+            }
+        });
+    }
+
+    recibirMensajes(mensaje: proto.IWebMessageInfo) {
+        const nro_whatsapp = mensaje.key.remoteJid;
+        console.log('numero whatsapp:', nro_whatsapp);
+        console.log(mensaje.message?.conversation);
+        //mensaje.key.fromMe   --si el mensaje viene de mi mismo
+    }
+
+    async enviarMensaje(nro_whatsapp, mensaje: string) {
+        if (!this.sock) return 'no inicio el servicio de whatsapp';
+
+        await this.sock.sendMessage(nro_whatsapp, {
+            text: mensaje,
+        });
+        return { mensaje: 'mensaje enviado' };
+    }
+
+    async useDatabaseAuthState(id: number): Promise<{
+        state: AuthenticationState;
+        saveCreds: () => Promise<void>;
+    }> {
+        // 1. Leer credenciales y llaves desde la base de datos
+        const sesion_whatsapp = await this.sesionWhatsappService.findOne(id);
+        const credsFromDb = sesion_whatsapp?.creds; //tuDb.obtener('wa_creds');
+        const keysFromDb = sesion_whatsapp?.keys; //tuDb.obtener('wa_keys');
+
+        let creds: AuthenticationState['creds'];
+        if (credsFromDb) {
+            creds =
+                typeof credsFromDb === 'string'
+                    ? JSON.parse(credsFromDb)
+                    : credsFromDb;
+        } else {
+            creds = initAuthCreds();
         }
-      } else if (connection == 'open') {
-        console.log('CONEXION ABIERTA');
-      }
-    });
-    this.sock.ev.on(
-      'messaging-history.set',
-      ({
-        chats: newChats,
-        contacts: newContacts,
-        messages: newMessages,
-        syncType,
-      }) => {
-        console.log('chats', newChats, newContacts, newMessages);
-      },
-    );
-    this.sock.ev.on('messages.upsert', ({ type, messages }) => {
-      if (type == 'notify') {
-        // new messages
-        for (const message of messages) {
-          this.recibirMensajes(message);
-        }
-      } else {
-        // old already seen / handled messages
-        // handle them however you want to
-        console.log(messages);
-      }
-    });
-  }
+        let keys = keysFromDb || {};
 
-  recibirMensajes(mensaje: proto.IWebMessageInfo) {
-    const nro_whatsapp = mensaje.key.remoteJid;
-    console.log('numero whatsapp:', nro_whatsapp);
-    console.log(mensaje.message?.conversation);
-    //mensaje.key.fromMe   --si el mensaje viene de mi mismo
-  }
+        const state: AuthenticationState = {
+            creds,
+            keys: {
+                get: async (type, ids) => {
+                    // Devuelve las llaves solicitadas desde la base de datos
+                    // Debes implementar la lógica real aquí según tu base de datos
+                    // Por ahora, devolvemos un objeto vacío del tipo esperado
+                    return {} as {
+                        [id: string]: SignalDataTypeMap[typeof type];
+                    };
+                },
+                set: async (data) => {
+                    // Guarda las llaves en la base de datos
+                    // ...
+                },
+            },
+        };
 
-  async enviarMensaje(nro_whatsapp, mensaje: string) {
-    if (!this.sock) return 'no inicio el servicio de whatsapp';
+        const saveCreds = async () => {
+            const createSesionWhatsappDto: CreateSesionWhatsappDto = {
+                creds: JSON.stringify(state.creds),
+                keys: JSON.stringify(state.keys), // <-- agrega esto
+                name: 'client-one',
+                telefono: '123456789',
+            };
+            await this.sesionWhatsappService.create(createSesionWhatsappDto);
+            // Guarda también las llaves si es necesario
+        };
 
-    await this.sock.sendMessage(nro_whatsapp, {
-      text: mensaje,
-    });
-    return { mensaje: 'mensaje enviado' };
-  }
+        return { state, saveCreds };
+    }
 }

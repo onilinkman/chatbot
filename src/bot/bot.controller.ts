@@ -3,7 +3,7 @@ import { BotService } from './bot.service';
 import { Request, Response } from 'express';
 import PostMensajeDto from './dto/post-mensaje.dto';
 
-@Controller('bot')
+@Controller('api/bot')
 export class BotController {
   constructor(private readonly botService: BotService) {}
 

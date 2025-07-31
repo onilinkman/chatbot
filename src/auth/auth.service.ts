@@ -6,12 +6,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Auth } from './entities/auth.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
     constructor(
         @InjectRepository(Auth)
         private readonly authRepository: Repository<Auth>,
+        private jwtService: JwtService,
     ) {}
 
     create(createAuthDto: CreateAuthDto) {
@@ -36,7 +38,9 @@ export class AuthService {
         if (!bcrypt.compareSync(password, user.password)) {
             throw new UnauthorizedException('Usuario o contraseña incorrecta');
         }
-        return user;
+        const payload = { sub: user.id_persona, username: user.username };
+
+        return { access_token: await this.jwtService.signAsync(payload) };
     }
 
     findAll() {

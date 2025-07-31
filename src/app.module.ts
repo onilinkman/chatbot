@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PersonaModule } from './persona/persona.module';
 import { AuthModule } from './auth/auth.module';
+import { SesionWhatsappModule } from './sesion_whatsapp/sesion_whatsapp.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     PersonaModule,
     AuthModule,
+    SesionWhatsappModule,
   ],
   controllers: [],
 })
