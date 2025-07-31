@@ -14,7 +14,9 @@ export class SesionWhatsappService {
 
     async create(createSesionWhatsappDto: CreateSesionWhatsappDto) {
         try {
-            const sesion = this.personaRepository.create();
+            const sesion = this.personaRepository.create(
+                createSesionWhatsappDto,
+            );
             await this.personaRepository.save(sesion);
             return sesion;
         } catch (error) {
@@ -31,8 +33,21 @@ export class SesionWhatsappService {
         return this.personaRepository.findOneBy({ id_sesion_whatsapp: id });
     }
 
-    update(id: number, updateSesionWhatsappDto: UpdateSesionWhatsappDto) {
-        return `This action updates a #${id} sesionWhatsapp`;
+    findOneByName(name: string) {
+        return this.personaRepository.findOneBy({ name: name });
+    }
+
+    async update(id: number, updateSesionWhatsappDto: UpdateSesionWhatsappDto) {
+        try {
+            const sesion = this.personaRepository.create(
+                updateSesionWhatsappDto,
+            );
+            await this.personaRepository.save(sesion);
+            return sesion;
+        } catch (error) {
+            const err = error as Error;
+            throw new InternalServerErrorException('error:', err.message);
+        }
     }
 
     remove(id: number) {

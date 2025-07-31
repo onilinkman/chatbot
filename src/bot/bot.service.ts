@@ -11,6 +11,7 @@ import makeWASocket, {
 import P from 'pino';
 import { toString } from 'qrcode';
 import { CreateSesionWhatsappDto } from 'src/sesion_whatsapp/dto/create-sesion_whatsapp.dto';
+import { UpdateSesionWhatsappDto } from 'src/sesion_whatsapp/dto/update-sesion_whatsapp.dto';
 import { SesionWhatsappService } from 'src/sesion_whatsapp/sesion_whatsapp.service';
 
 @Injectable()
@@ -99,7 +100,8 @@ export class BotService {
         saveCreds: () => Promise<void>;
     }> {
         // 1. Leer credenciales y llaves desde la base de datos
-        const sesion_whatsapp = await this.sesionWhatsappService.findOne(id);
+        const sesion_whatsapp =
+            await this.sesionWhatsappService.findOneByName('client-one');
         const credsFromDb = sesion_whatsapp?.creds; //tuDb.obtener('wa_creds');
         const keysFromDb = sesion_whatsapp?.keys; //tuDb.obtener('wa_keys');
 
@@ -112,34 +114,71 @@ export class BotService {
         } else {
             creds = initAuthCreds();
         }
-        let keys = keysFromDb || {};
+        let keys: Partial<SignalDataTypeMap> = {};
+        if (keysFromDb) {
+            keys =
+                typeof keysFromDb === 'string'
+                    ? JSON.parse(keysFromDb)
+                    : keysFromDb;
+        }
 
         const state: AuthenticationState = {
             creds,
             keys: {
                 get: async (type, ids) => {
-                    // Devuelve las llaves solicitadas desde la base de datos
-                    // Debes implementar la lógica real aquí según tu base de datos
-                    // Por ahora, devolvemos un objeto vacío del tipo esperado
-                    return {} as {
-                        [id: string]: SignalDataTypeMap[typeof type];
-                    };
+                    // Recupera las llaves del objeto keys en memoria
+                    const result: any = {};
+                    for (const id of ids) {
+                        if (keys[type] && keys[type][id]) {
+                            result[id] = keys[type][id];
+                        }
+                    }
+                    return result;
                 },
                 set: async (data) => {
-                    // Guarda las llaves en la base de datos
-                    // ...
+                    // Actualiza el objeto keys en memoria
+                    for (const _type in data) {
+                        if (!keys[_type]) keys[_type] = {};
+                        Object.assign(keys[_type], data[_type]);
+                    }
                 },
             },
         };
 
         const saveCreds = async () => {
+            if (!state.creds) {
+                console.error('No hay creds para guardar');
+                return;
+            }
+            if (!state.keys) {
+                console.error('No hay keys para guardar');
+                return;
+            }
+
             const createSesionWhatsappDto: CreateSesionWhatsappDto = {
                 creds: JSON.stringify(state.creds),
-                keys: JSON.stringify(state.keys), // <-- agrega esto
+                keys: JSON.stringify(keys), // <-- agrega esto 
                 name: 'client-one',
                 telefono: '123456789',
             };
-            await this.sesionWhatsappService.create(createSesionWhatsappDto);
+            try {
+                const sw =
+                    await this.sesionWhatsappService.findOneByName(
+                        'client-one',
+                    );
+                if (sw) {
+                    await this.sesionWhatsappService.update(1, {
+                        creds: JSON.stringify(creds),
+                        keys: JSON.stringify(keys),
+                    });
+                } else {
+                    await this.sesionWhatsappService.create(
+                        createSesionWhatsappDto,
+                    );
+                }
+            } catch (error) {
+                console.error('Error guardando sesión:', error);
+            }
             // Guarda también las llaves si es necesario
         };
 
