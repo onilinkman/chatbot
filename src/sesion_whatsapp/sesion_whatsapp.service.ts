@@ -34,7 +34,7 @@ export class SesionWhatsappService {
     }
 
     findOneByName(name: string) {
-        return this.personaRepository.findOneBy({ name: name });
+        return this.personaRepository.findOneBy({ nombre: name });
     }
 
     async update(id: number, updateSesionWhatsappDto: UpdateSesionWhatsappDto) {

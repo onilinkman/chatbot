@@ -5,14 +5,11 @@ export class SesionWhatsapp {
     @PrimaryGeneratedColumn({ name: 'id_sesion_whatsapp' })
     id_sesion_whatsapp: number;
 
-    @Column({ type: 'clob', name: 'CREDS' })
-    creds: string;
-
-    @Column({ type: 'clob', name: 'KEYS' })
-    keys: string;
+    @Column({ type: 'varchar2', length: 25, unique: true })
+    nombre: string;
 
     @Column({ type: 'varchar2', length: 25, unique: true })
-    name: string;
+    nombre_sesion: string;
 
     @Column({ type: 'varchar2', length: 25 })
     telefono: string;
@@ -23,4 +20,10 @@ export class SesionWhatsapp {
         default: () => 'CURRENT_TIMESTAMP',
     })
     updaad_at: Date;
+
+    @Column({
+        type: 'number',
+        default: () => 0,
+    })
+    eliminado: boolean;
 }

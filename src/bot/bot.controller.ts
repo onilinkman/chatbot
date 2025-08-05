@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { Request, Response } from 'express';
 import PostMensajeDto from './dto/post-mensaje.dto';
@@ -17,6 +17,7 @@ export class BotController {
         //Nota: enviar con este formato: 59179161442@s.whatsapp.net
         try {
             await this.botService.enviarMensaje(
+                postMensajeDto.clientName,
                 postMensajeDto.nro_telefono,
                 postMensajeDto.mensaje,
             );
@@ -24,10 +25,14 @@ export class BotController {
         } catch (error) {}
     }
 
-    @Get('/conectar')
-    conectarWhatsapp(@Req() request: Request, @Res() response: Response) {
+    @Get('/conectar/:clientName')
+    conectarWhatsapp(
+        @Req() request: Request,
+        @Res() response: Response,
+        @Param('clientName') clientName: string,
+    ) {
         let sent = false;
-        this.botService.conectarWhatsapp((qrUrl) => {
+        this.botService.conectarWhatsapp(clientName, (qrUrl) => {
             if (sent) return;
             sent = true;
             const base64Data = qrUrl.replace(/^data:image\/png;base64,/, '');

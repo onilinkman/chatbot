@@ -1,4 +1,5 @@
 export default class PostMensajeDto {
-  nro_telefono: string;
-  mensaje: string;
+    clientName: string;
+    nro_telefono: string;
+    mensaje: string;
 }
