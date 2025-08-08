@@ -1,3 +1,4 @@
+import { Archivo } from 'src/archivo/entities/archivo.entity';
 import { RegistroAccion } from 'src/registro_accion/entities/registro_accion.entity';
 import { SesionWhatsapp } from 'src/sesion_whatsapp/entities/sesion_whatsapp.entity';
 import {
@@ -7,6 +8,7 @@ import {
     JoinColumn,
     ManyToOne,
     OneToMany,
+    OneToOne,
     PrimaryGeneratedColumn,
     Unique,
 } from 'typeorm';
@@ -48,4 +50,7 @@ export class BotRespuesta {
     @ManyToOne(() => SesionWhatsapp)
     @JoinColumn({ name: 'id_sesion_whatsapp' })
     sesionWhatsapp: SesionWhatsapp;
+
+    /* @OneToOne(() => Archivo, (archivo) => archivo.bot_respuesta)
+    archivo: Archivo; */
 }

@@ -32,7 +32,8 @@ export class BotController {
         @Param('clientName') clientName: string,
     ) {
         let sent = false;
-        this.botService.conectarWhatsapp(clientName, (qrUrl) => {
+		//this.botService.generarNuevoQr
+        this.botService.generarNuevoQr(clientName, (qrUrl) => {
             if (sent) return;
             sent = true;
             const base64Data = qrUrl.replace(/^data:image\/png;base64,/, '');

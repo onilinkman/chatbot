@@ -9,12 +9,50 @@ import P from 'pino';
 import { toDataURL, toString } from 'qrcode';
 import { RespuestaTelefonoRegistroDto } from 'src/registro_accion/dto/respuesta-telefono-registro.dto';
 import { RegistroAccionService } from 'src/registro_accion/registro_accion.service';
+import { SesionWhatsappService } from 'src/sesion_whatsapp/sesion_whatsapp.service';
+import * as fs from 'fs';
 
 @Injectable()
 export class BotService {
     private mapSock: Map<String, WASocket> = new Map();
 
-    constructor(private registroAccionService: RegistroAccionService) {}
+    constructor(
+        private registroAccionService: RegistroAccionService,
+        private sesionesWhatsapp: SesionWhatsappService,
+    ) {
+        this.conectarAlIniciar();
+    }
+
+    async conectarAlIniciar() {
+        const sw = await this.sesionesWhatsapp.findAll();
+        sw.forEach((value) => {
+            this.conectarWhatsapp(value.nombre_sesion, (qrUrl) => {});
+        });
+    }
+
+    async generarNuevoQr(
+        nombreSesion: string,
+        callback: (qrUrl: string) => void,
+    ) {
+        await this.borrarArchivoSesion(nombreSesion);
+        await this.conectarWhatsapp(nombreSesion, callback);
+    }
+
+    async borrarArchivoSesion(nombreSesion: string) {
+        const sock = this.mapSock.get(nombreSesion);
+        if (sock) {
+            try {
+                await sock.logout();
+            } catch {}
+            this.mapSock.delete(nombreSesion);
+        }
+
+        const fs = require('fs');
+        const path = `./${nombreSesion}`;
+        if (fs.existsSync(path)) {
+            fs.rmSync(path, { recursive: true, force: true });
+        }
+    }
 
     async conectarWhatsapp(
         nombreSesion: string,
@@ -43,6 +81,8 @@ export class BotService {
 
         sock.ev.on('connection.update', async (update) => {
             const { qr } = update;
+            console.log('conectando update :', nombreSesion, update);
+            console.log('estado ', nombreSesion, update.connection);
             if (typeof qr === 'string' && qr.length > 0) {
                 /* const qrTerminal = await toString(qr, {
                     type: 'terminal',
@@ -55,14 +95,20 @@ export class BotService {
             }
             const { connection, lastDisconnect } = update;
             if (connection === 'close') {
-                this.mapSock.delete(nombreSesion);
-                const puedeConectar =
-                    (lastDisconnect?.error as any)?.output?.statusCode !==
-                    DisconnectReason.restartRequired;
-                if (puedeConectar) {
-                    this.conectarWhatsapp(nombreSesion, callback);
+                const statusCode = (lastDisconnect?.error as any)?.output
+                    ?.statusCode;
+                const restartRequired =
+                    statusCode === DisconnectReason.restartRequired;
+
+                if (restartRequired) {
+                    console.log(
+                        `♻️ Reiniciando sesión ${nombreSesion} por error 515`,
+                    );
+                    this.mapSock.delete(nombreSesion);
+                    await this.conectarWhatsapp(nombreSesion, callback); // reconexión completa
                 }
-            } else if (connection == 'open') {
+            }
+            if (connection == 'open') {
                 console.log('CONEXION ABIERTA');
             }
         });
@@ -118,14 +164,32 @@ export class BotService {
         rtr.nro_telefono = jid.split('@')[0];
         rtr.mensaje = msj;
         const ra = await this.registroAccionService.registroAccion(rtr);
+        //this.enviarArchivo(nombreSesion, jid, 'hola');
         await sock.sendMessage(jid, { text: ra.body });
 
         //mensaje.key.fromMe   --si el mensaje viene de mi mismo
     }
 
-    async enviarMensaje(nombreSesion: string, nro_whatsapp, mensaje: string) {
+    async enviarArchivo(
+        nombreSesion: string,
+        nro_whatsapp: string,
+        codigoAccion: string,
+    ) {
         const sock = this.mapSock.get(nombreSesion);
-        if (!sock) throw new Error('Error al buscar cliente');
+        if (!sock) return 'no inicio el servicio de whatsapp';
+        await sock.sendMessage(nro_whatsapp, {
+            document: fs.readFileSync('./public/avancesBiumsa.pdf'),
+            mimetype: 'application/pdf',
+            fileName: 'avancesBiumsa.pdf',
+        });
+    }
+
+    async enviarMensaje(
+        nombreSesion: string,
+        nro_whatsapp: string,
+        mensaje: string,
+    ) {
+        const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
 
         await sock.sendMessage(nro_whatsapp, {

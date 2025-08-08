@@ -8,6 +8,7 @@ import { SesionWhatsappModule } from './sesion_whatsapp/sesion_whatsapp.module';
 import { BotRespuestaModule } from './bot_respuesta/bot_respuesta.module';
 import { TelefonoModule } from './telefono/telefono.module';
 import { RegistroAccionModule } from './registro_accion/registro_accion.module';
+import { ArchivoModule } from './archivo/archivo.module';
 
 @Module({
     imports: [
@@ -31,6 +32,7 @@ import { RegistroAccionModule } from './registro_accion/registro_accion.module';
         BotRespuestaModule,
         TelefonoModule,
         RegistroAccionModule,
+        ArchivoModule,
     ],
     controllers: [],
 })

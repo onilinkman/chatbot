@@ -25,5 +25,5 @@ export class SesionWhatsapp {
         type: 'number',
         default: () => 0,
     })
-    eliminado: boolean;
+    eliminado: number;
 }

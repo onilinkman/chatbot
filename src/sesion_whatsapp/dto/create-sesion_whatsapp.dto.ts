@@ -1,7 +1,5 @@
 export class CreateSesionWhatsappDto {
-    creds: string;
-    keys?: string;
-    name?: string;
-    telefono?: string;
-    updaad_at?: Date;
+    nombre:string;
+	nombre_sesion:string;
+	telefono:string;
 }

@@ -9,15 +9,15 @@ import { SesionWhatsapp } from './entities/sesion_whatsapp.entity';
 export class SesionWhatsappService {
     constructor(
         @InjectRepository(SesionWhatsapp)
-        private readonly personaRepository: Repository<SesionWhatsapp>,
+        private readonly sesionWhatsappRepository: Repository<SesionWhatsapp>,
     ) {}
 
     async create(createSesionWhatsappDto: CreateSesionWhatsappDto) {
         try {
-            const sesion = this.personaRepository.create(
+            const sesion = this.sesionWhatsappRepository.create(
                 createSesionWhatsappDto,
             );
-            await this.personaRepository.save(sesion);
+            await this.sesionWhatsappRepository.save(sesion);
             return sesion;
         } catch (error) {
             const err = error as Error;
@@ -26,23 +26,27 @@ export class SesionWhatsappService {
     }
 
     findAll() {
-        return `This action returns all sesionWhatsapp`;
+        return this.sesionWhatsappRepository.find({
+            where: {
+                eliminado: 0,
+            },
+        });
     }
 
     findOne(id: number) {
-        return this.personaRepository.findOneBy({ id_sesion_whatsapp: id });
+        return this.sesionWhatsappRepository.findOneBy({ id_sesion_whatsapp: id });
     }
 
     findOneByName(name: string) {
-        return this.personaRepository.findOneBy({ nombre: name });
+        return this.sesionWhatsappRepository.findOneBy({ nombre: name });
     }
 
     async update(id: number, updateSesionWhatsappDto: UpdateSesionWhatsappDto) {
         try {
-            const sesion = this.personaRepository.create(
+            const sesion = this.sesionWhatsappRepository.create(
                 updateSesionWhatsappDto,
             );
-            await this.personaRepository.save(sesion);
+            await this.sesionWhatsappRepository.save(sesion);
             return sesion;
         } catch (error) {
             const err = error as Error;
