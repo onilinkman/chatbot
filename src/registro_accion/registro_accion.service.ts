@@ -53,7 +53,7 @@ export class RegistroAccionService {
                 order: {
                     id_registro_accion: 'DESC',
                 },
-            }); 
+            });
 
             if (!ra) {
                 const br = await this.botRespuestaService.findOneByMessage(
@@ -61,7 +61,7 @@ export class RegistroAccionService {
                 );
                 if (!br) {
                     dataModel.status = 404;
-                    dataModel.body = 'No encontrado';
+                    dataModel.body = 'Ingrese palabra clave para iniciar chat con _bot_';
                     dataModel.message = 'No se pudo iniciarl la conversacion';
                     return dataModel;
                 }
@@ -94,6 +94,7 @@ export class RegistroAccionService {
                     dataModel.message = 'No se pudo iniciarl la conversacion';
                     return dataModel;
                 }
+
                 let text = resp.presentacion + '\n';
 
                 resp.respuestas.forEach((element) => {
@@ -103,6 +104,12 @@ export class RegistroAccionService {
                 nra.bot_respuesta = resp;
                 nra.telefono = telefono;
                 await this.registroAccionRepository.save(nra);
+                if (resp.codigo_accion) {
+                    this.ejecutarAccion(
+                        resp.codigo_accion,
+                        telefono.id_telefono,
+                    );
+                }
                 dataModel.status = 201;
                 dataModel.body = text;
                 dataModel.message = 'Continua la conversacion';
@@ -112,6 +119,18 @@ export class RegistroAccionService {
         } catch (error) {
             const err = error as Error;
             throw new Error('Error al guardar registro: ' + err.message);
+        }
+    }
+
+    async ejecutarAccion(codigoAccion: string, id_telefono: number) {
+        if ('eliminarChat' == codigoAccion) {
+            await this.registroAccionRepository
+                .createQueryBuilder()
+                .update()
+                .set({ eliminado: 1 })
+                .where('id_telefono = :id_telefono', { id_telefono })
+                .execute();
+            return;
         }
     }
 

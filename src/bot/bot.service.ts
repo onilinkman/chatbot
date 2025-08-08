@@ -108,9 +108,9 @@ export class BotService {
     ) {
         const nro_whatsapp = mensaje.key.remoteJid;
         const jid = mensaje.key.remoteJid;
-        console.log('numero whatsapp:', nro_whatsapp, jid);
+        /* console.log('numero whatsapp:', nro_whatsapp, jid);
         console.log('nuevo', mensaje.message);
-        console.log('mensaje', mensaje.message?.conversation);
+        console.log('mensaje', mensaje.message?.conversation); */
         const msj = mensaje.message?.conversation ?? '';
         const sock = this.mapSock.get(nombreSesion);
         if (!sock || !jid) throw new Error('Error al buscar cliente');

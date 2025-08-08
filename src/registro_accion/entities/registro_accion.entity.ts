@@ -26,4 +26,11 @@ export class RegistroAccion {
     )
 	@JoinColumn({name:"id_bot_respuesta"})
     bot_respuesta: BotRespuesta;
+
+	@Column({
+        type: 'timestamp',
+        name: 'fecha_registro',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+	fecha_registro:Date;
 }
