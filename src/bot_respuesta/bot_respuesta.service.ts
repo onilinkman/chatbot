@@ -34,8 +34,28 @@ export class BotRespuestaService {
         return `This action returns all botRespuesta`;
     }
 
+    async findOneByMessage(mensaje: string) {
+        const br = await this.botRespuestaRepository.findOne({
+            relations: ['respuestas'],
+            where: { mensaje, eliminado: 0 },
+        });
+        return br;
+    }
+
     findOne(id: number) {
-        return `This action returns a #${id} botRespuesta`;
+        return `This action find a #${id} botRespuesta`;
+    }
+
+    async findOneByNro(nro: number, respuesta_origen: BotRespuesta) {
+        const br = await this.botRespuestaRepository.findOne({
+            relations: ['respuestas'],
+            where: {
+                nro,
+                eliminado: 0,
+                respuesta_origen,
+            },
+        });
+        return br;
     }
 
     update(id: number, updateBotRespuestaDto: UpdateBotRespuestaDto) {

@@ -24,5 +24,6 @@ export class RegistroAccion {
         () => BotRespuesta,
         (bot_respuesta) => bot_respuesta.registro_acciones,
     )
+	@JoinColumn({name:"id_bot_respuesta"})
     bot_respuesta: BotRespuesta;
 }

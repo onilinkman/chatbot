@@ -1,18 +1,24 @@
 import { RegistroAccion } from 'src/registro_accion/entities/registro_accion.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Unique,
+} from 'typeorm';
 
 @Entity({ name: 'TELEFONO' })
 export class Telefono {
     @PrimaryGeneratedColumn()
     id_telefono: number;
 
-    @Column({ unique: true, type: 'varchar2', length: 25 })
+    @Column({ type: 'varchar2', length: 25, unique: true })
     nro_telefono: string;
 
-    @Column({ type: 'varchar2', length: 5 })
+    @Column({ type: 'varchar2', length: 5, nullable: true })
     codigo_region: string;
 
-    @Column({ type: 'number' })
+    @Column({ type: 'number', default: 0 })
     eliminado: number;
 
     @OneToMany(

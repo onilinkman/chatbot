@@ -7,12 +7,14 @@ import makeWASocket, {
 } from 'baileys';
 import P from 'pino';
 import { toDataURL, toString } from 'qrcode';
+import { RespuestaTelefonoRegistroDto } from 'src/registro_accion/dto/respuesta-telefono-registro.dto';
+import { RegistroAccionService } from 'src/registro_accion/registro_accion.service';
 
 @Injectable()
 export class BotService {
     private mapSock: Map<String, WASocket> = new Map();
 
-    constructor() {}
+    constructor(private registroAccionService: RegistroAccionService) {}
 
     async conectarWhatsapp(
         nombreSesion: string,
@@ -90,7 +92,7 @@ export class BotService {
             if (type == 'notify') {
                 // new messages
                 for (const message of messages) {
-                    await this.recibirMensajes(message);
+                    await this.recibirMensajes(message, nombreSesion);
                 }
             } else {
                 // old already seen / handled messages
@@ -100,10 +102,24 @@ export class BotService {
         });
     }
 
-    async recibirMensajes(mensaje: proto.IWebMessageInfo) {
+    async recibirMensajes(
+        mensaje: proto.IWebMessageInfo,
+        nombreSesion: string,
+    ) {
         const nro_whatsapp = mensaje.key.remoteJid;
-        console.log('numero whatsapp:', nro_whatsapp);
+        const jid = mensaje.key.remoteJid;
+        console.log('numero whatsapp:', nro_whatsapp, jid);
         console.log('nuevo', mensaje.message);
+        console.log('mensaje', mensaje.message?.conversation);
+        const msj = mensaje.message?.conversation ?? '';
+        const sock = this.mapSock.get(nombreSesion);
+        if (!sock || !jid) throw new Error('Error al buscar cliente');
+        const rtr = new RespuestaTelefonoRegistroDto();
+        rtr.nro_telefono = jid.split('@')[0];
+        rtr.mensaje = msj;
+        const ra = await this.registroAccionService.registroAccion(rtr);
+        await sock.sendMessage(jid, { text: ra.body });
+
         //mensaje.key.fromMe   --si el mensaje viene de mi mismo
     }
 

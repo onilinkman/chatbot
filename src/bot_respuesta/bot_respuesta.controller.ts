@@ -12,6 +12,8 @@ export class BotRespuestaController {
     return this.botRespuestaService.create(createBotRespuestaDto);
   }
 
+  
+
   @Get()
   findAll() {
     return this.botRespuestaService.findAll();

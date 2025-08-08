@@ -31,6 +31,7 @@
     "@nestjs/websockets": "^11.1.5",
     "baileys": "^6.7.18",
     "bcrypt": "^6.0.0",
+    "libphonenumber-js": "^1.12.10",
     "oracledb": "^6.8.0",
     "pino": "^9.7.0",
     "qrcode": "^1.5.4",
@@ -83,5 +84,6 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  }
+  },
+  "packageManager": "pnpm@10.14.0+sha256.297534e65d5842450539c1e8022c8831ab5e1fe2eb74664787a815519542d620"
 }

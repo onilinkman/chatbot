@@ -8,8 +8,10 @@ import {
     ManyToOne,
     OneToMany,
     PrimaryGeneratedColumn,
+    Unique,
 } from 'typeorm';
 
+@Unique(['nro', 'respuesta_origen'])
 @Entity({ name: 'BOT_RESPUESTA' })
 export class BotRespuesta {
     @PrimaryGeneratedColumn()
@@ -27,7 +29,7 @@ export class BotRespuesta {
     @Column({ type: 'varchar2', length: 100, nullable: true })
     codigo_accion: string;
 
-    @OneToMany(() => BotRespuesta, (respuestas) => respuestas)
+    @OneToMany(() => BotRespuesta, (respuestas) => respuestas.respuesta_origen)
     respuestas: BotRespuesta[];
 
     @ManyToOne(() => BotRespuesta, { nullable: true })

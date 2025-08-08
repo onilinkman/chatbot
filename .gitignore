@@ -5,6 +5,8 @@
 #Ignoramos auth_info_baileys ya que aqui se guarda la sesion de whatsapp
 /auth_info_baileys
 /client-one
+/client-*
+/client-bot
 
 # Logs
 logs

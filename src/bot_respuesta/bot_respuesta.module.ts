@@ -18,5 +18,6 @@ import { BotRespuesta } from './entities/bot_respuesta.entity';
         },
         BotRespuestaService,
     ],
+    exports: [BotRespuestaService],
 })
 export class BotRespuestaModule {}
