@@ -9,6 +9,7 @@ import { BotRespuestaModule } from './bot_respuesta/bot_respuesta.module';
 import { TelefonoModule } from './telefono/telefono.module';
 import { RegistroAccionModule } from './registro_accion/registro_accion.module';
 import { ArchivoModule } from './archivo/archivo.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
     imports: [
@@ -33,7 +34,9 @@ import { ArchivoModule } from './archivo/archivo.module';
         TelefonoModule,
         RegistroAccionModule,
         ArchivoModule,
+        WhatsappModule,
     ],
     controllers: [],
+    providers: [],
 })
 export class AppModule {}

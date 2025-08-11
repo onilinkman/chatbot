@@ -6,10 +6,14 @@ import {
     Patch,
     Param,
     Delete,
+    Res,
 } from '@nestjs/common';
 import { SesionWhatsappService } from './sesion_whatsapp.service';
 import { CreateSesionWhatsappDto } from './dto/create-sesion_whatsapp.dto';
 import { UpdateSesionWhatsappDto } from './dto/update-sesion_whatsapp.dto';
+import { ApiResponse } from 'src/models';
+import { SesionWhatsapp } from './entities/sesion_whatsapp.entity';
+import { Response } from 'express';
 
 @Controller('api/sesion-whatsapp')
 export class SesionWhatsappController {
@@ -23,8 +27,22 @@ export class SesionWhatsappController {
     }
 
     @Get()
-    findAll() {
-        return this.sesionWhatsappService.findAll();
+    async findAll(@Res() res: Response) {
+        try {
+            const myRes = new ApiResponse<SesionWhatsapp[]>();
+            myRes.status = 200;
+            myRes.body = await this.sesionWhatsappService.findAll();
+            myRes.mensaje = 'Se obtuvo correctamente';
+
+            return res.status(myRes.status).send(myRes);
+        } catch (error) {
+            const myRes = new ApiResponse<String>();
+            let err = error as Error;
+            myRes.body = 'Error al obtener sesiones: ' + err.message;
+            myRes.status = 409;
+            myRes.mensaje = 'Se produjo un error en findAll de sesion_whatsapp';
+            return res.status(myRes.status).send(myRes);
+        }
     }
 
     @Get(':id')

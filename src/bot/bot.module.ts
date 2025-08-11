@@ -8,5 +8,6 @@ import { RegistroAccionModule } from 'src/registro_accion/registro_accion.module
     imports: [SesionWhatsappModule, RegistroAccionModule],
     controllers: [BotController],
     providers: [BotService],
+    exports: [BotService],
 })
 export class BotModule {}

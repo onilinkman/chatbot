@@ -34,6 +34,28 @@ export class BotRespuestaService {
         return `This action returns all botRespuesta`;
     }
 
+    async getFirstQuestionBySesion(id_sesion_whatsapp: number) {
+        const sw = new SesionWhatsapp();
+        sw.id_sesion_whatsapp = id_sesion_whatsapp;
+
+        const rpo = new BotRespuesta();
+		
+        const br = await this.botRespuestaRepository
+            .createQueryBuilder('br')
+            .leftJoinAndSelect('br.respuestas', 'respuestas')
+            
+            .innerJoin(
+                'br.sesionWhatsapp',
+                'sw',
+                'sw.id_sesion_whatsapp = :id_sesion_whatsapp',
+                { id_sesion_whatsapp },
+            )
+            .where('br.id_respuesta_origen IS NULL')
+
+            .getMany();
+        return br;
+    }
+
     async findOneByMessage(mensaje: string) {
         const br = await this.botRespuestaRepository.findOne({
             relations: ['respuestas'],

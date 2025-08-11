@@ -26,15 +26,13 @@ export class SesionWhatsappService {
     }
 
     findAll() {
-        return this.sesionWhatsappRepository.find({
-            where: {
-                eliminado: 0,
-            },
-        });
+        return this.sesionWhatsappRepository.find();
     }
 
     findOne(id: number) {
-        return this.sesionWhatsappRepository.findOneBy({ id_sesion_whatsapp: id });
+        return this.sesionWhatsappRepository.findOneBy({
+            id_sesion_whatsapp: id,
+        });
     }
 
     findOneByName(name: string) {
