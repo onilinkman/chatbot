@@ -12,17 +12,23 @@ export class BotController {
     return this.botService.enviarMensaje();
   } */
 
-    @Post('/enviar')
-    async postMensaje(@Body() postMensajeDto: PostMensajeDto) {
+    @Post('/enviar/:clientName')
+    async postMensaje(
+        @Body() postMensajeDto: PostMensajeDto,
+        @Param('clientName') clientName: string,
+    ) {
         //Nota: enviar con este formato: 59179161442@s.whatsapp.net
         try {
             await this.botService.enviarMensaje(
-                postMensajeDto.clientName,
+                clientName,
                 postMensajeDto.nro_telefono,
                 postMensajeDto.mensaje,
             );
             return { body: 'Mensaje enviado' };
-        } catch (error) {}
+        } catch (error) {
+            const err = error as Error;
+            return { body: 'error: ' + err.message };
+        }
     }
 
     @Get('/conectar/:clientName')
@@ -32,7 +38,7 @@ export class BotController {
         @Param('clientName') clientName: string,
     ) {
         let sent = false;
-		//this.botService.generarNuevoQr
+        //this.botService.generarNuevoQr
         this.botService.generarNuevoQr(clientName, (qrUrl) => {
             if (sent) return;
             sent = true;

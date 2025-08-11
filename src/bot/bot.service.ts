@@ -165,6 +165,7 @@ export class BotService {
         rtr.mensaje = msj;
         const ra = await this.registroAccionService.registroAccion(rtr);
         //this.enviarArchivo(nombreSesion, jid, 'hola');
+
         await sock.sendMessage(jid, { text: ra.body });
 
         //mensaje.key.fromMe   --si el mensaje viene de mi mismo
@@ -192,7 +193,9 @@ export class BotService {
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
 
-        await sock.sendMessage(nro_whatsapp, {
+        const jid = nro_whatsapp + '@s.whatsapp.net';
+
+        await sock.sendMessage(jid, {
             text: mensaje,
         });
         return { mensaje: 'mensaje enviado' };
