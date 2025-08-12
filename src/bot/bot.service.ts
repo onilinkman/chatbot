@@ -174,12 +174,13 @@ export class BotService {
     async enviarArchivo(
         nombreSesion: string,
         nro_whatsapp: string,
-        codigoAccion: string,
+        pathFile: string,
     ) {
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
         await sock.sendMessage(nro_whatsapp, {
-            document: fs.readFileSync('./public/avancesBiumsa.pdf'),
+            //document: fs.readFileSync('./public/avancesBiumsa.pdf'),
+            document: fs.readFileSync('./public/' + pathFile),
             mimetype: 'application/pdf',
             fileName: 'avancesBiumsa.pdf',
         });

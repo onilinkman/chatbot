@@ -6,10 +6,13 @@ import {
     Patch,
     Param,
     Delete,
+    Put,
 } from '@nestjs/common';
 import { BotRespuestaService } from './bot_respuesta.service';
 import { CreateBotRespuestaDto } from './dto/create-bot_respuesta.dto';
 import { UpdateBotRespuestaDto } from './dto/update-bot_respuesta.dto';
+import { ApiResponse } from 'src/models';
+import { BotRespuesta } from './entities/bot_respuesta.entity';
 
 @Controller('api/bot-respuesta')
 export class BotRespuestaController {
@@ -26,18 +29,29 @@ export class BotRespuestaController {
     }
 
     @Get(':id')
-    findOne(@Param('id') id: number) {
-        return this.botRespuestaService.findOne(+id);
+    async findOne(@Param('id') id: number) {
+        const apiResponse = new ApiResponse<BotRespuesta[]>();
+        const data = await this.botRespuestaService.findOne(+id);
+        apiResponse.status = 200;
+        apiResponse.mensaje = 'Se obtuvo correctamente la respuesta';
+        apiResponse.body = data;
+        return apiResponse;
     }
 
     @Get('getFirstQuestionBySesion/:id')
-    getFirstQuestionBySesion(@Param('id') id_bot_respuesta: number) {
-        return this.botRespuestaService.getFirstQuestionBySesion(
-            id_bot_respuesta,
-        );
+    async getFirstQuestionBySesion(@Param('id') id_bot_respuesta: number) {
+        const apiResponse = new ApiResponse<BotRespuesta[]>();
+        const data =
+            await this.botRespuestaService.getFirstQuestionBySesion(
+                id_bot_respuesta,
+            );
+        apiResponse.status = 200;
+        apiResponse.mensaje = 'Se obtuvo correctamente las primeras respuestas';
+        apiResponse.body = data;
+        return apiResponse;
     }
 
-    @Patch(':id')
+    @Put(':id')
     update(
         @Param('id') id: string,
         @Body() updateBotRespuestaDto: UpdateBotRespuestaDto,

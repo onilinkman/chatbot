@@ -51,6 +51,8 @@ export class BotRespuesta {
     @JoinColumn({ name: 'id_sesion_whatsapp' })
     sesionWhatsapp: SesionWhatsapp;
 
-    /* @OneToOne(() => Archivo, (archivo) => archivo.bot_respuesta)
-    archivo: Archivo; */
+    @OneToOne(() => Archivo, (archivo) => archivo.bot_respuesta, {
+        cascade: true,
+    })
+    archivo: Archivo;
 }

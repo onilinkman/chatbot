@@ -39,12 +39,13 @@ export class BotRespuestaService {
         sw.id_sesion_whatsapp = id_sesion_whatsapp;
 
         const rpo = new BotRespuesta();
-		
+
         const br = await this.botRespuestaRepository
             .createQueryBuilder('br')
             .leftJoinAndSelect('br.respuestas', 'respuestas')
-            
-            .innerJoin(
+            .leftJoinAndSelect('br.respuesta_origen', 'ro')
+
+            .innerJoinAndSelect(
                 'br.sesionWhatsapp',
                 'sw',
                 'sw.id_sesion_whatsapp = :id_sesion_whatsapp',
@@ -64,8 +65,12 @@ export class BotRespuestaService {
         return br;
     }
 
-    findOne(id: number) {
-        return `This action find a #${id} botRespuesta`;
+    async findOne(id: number) {
+        const br = await this.botRespuestaRepository.find({
+            relations: ['respuestas', 'respuesta_origen', 'sesionWhatsapp'],
+            where: { id_bot_respuesta: id },
+        });
+        return br;
     }
 
     async findOneByNro(nro: number, respuesta_origen: BotRespuesta) {
@@ -80,8 +85,22 @@ export class BotRespuestaService {
         return br;
     }
 
-    update(id: number, updateBotRespuestaDto: UpdateBotRespuestaDto) {
-        return `This action updates a #${id} botRespuesta`;
+    async update(id: number, updateBotRespuestaDto: UpdateBotRespuestaDto) {
+        const oldbr = await this.botRespuestaRepository.findOne({
+            relations: ['respuestas'],
+            where: {
+                id_bot_respuesta: id,
+            },
+        });
+        if (!oldbr) return 'Error';
+
+        oldbr.nro = updateBotRespuestaDto.nro;
+
+        oldbr.mensaje = updateBotRespuestaDto.mensaje;
+        oldbr.presentacion = updateBotRespuestaDto.presentacion;
+
+        const newBr = await this.botRespuestaRepository.save(oldbr);
+        return newBr;
     }
 
     remove(id: number) {
