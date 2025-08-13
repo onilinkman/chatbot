@@ -7,7 +7,7 @@
 /client-one
 /client-*
 /client-bot
-/public
+/public/*
 
 # Logs
 logs

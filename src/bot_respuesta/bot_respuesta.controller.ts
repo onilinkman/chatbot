@@ -7,12 +7,18 @@ import {
     Param,
     Delete,
     Put,
+    UploadedFile,
+    UseInterceptors,
 } from '@nestjs/common';
 import { BotRespuestaService } from './bot_respuesta.service';
 import { CreateBotRespuestaDto } from './dto/create-bot_respuesta.dto';
 import { UpdateBotRespuestaDto } from './dto/update-bot_respuesta.dto';
 import { ApiResponse } from 'src/models';
 import { BotRespuesta } from './entities/bot_respuesta.entity';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('api/bot-respuesta')
 export class BotRespuestaController {
@@ -26,6 +32,28 @@ export class BotRespuestaController {
     @Get()
     findAll() {
         return this.botRespuestaService.findAll();
+    }
+
+    @Post('/upload/:id')
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: './public', // carpeta
+                filename: (req, file, cb) => {
+                    const uniqueSuffix =
+                        Date.now() + '-' + Math.round(Math.random() * 1e9);
+                    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+                },
+            }),
+        }),
+    )
+    uploadFile(
+        @UploadedFile() file: Express.Multer.File,
+        @Param('id') id_bot_respuesta: number,
+    ) {
+        console.log(file);
+        this.botRespuestaService.saveFile(id_bot_respuesta, file);
+        return { message: 'Archivo recibido', originalName: file.originalname };
     }
 
     @Get(':id')

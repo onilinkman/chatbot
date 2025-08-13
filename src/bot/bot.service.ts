@@ -164,7 +164,10 @@ export class BotService {
         rtr.nro_telefono = jid.split('@')[0];
         rtr.mensaje = msj;
         const ra = await this.registroAccionService.registroAccion(rtr);
-        //this.enviarArchivo(nombreSesion, jid, 'hola');
+        if (ra.status == 222) {
+            this.enviarArchivo(nombreSesion, jid, ra.body, ra.message);
+            return;
+        }
 
         await sock.sendMessage(jid, { text: ra.body });
 
@@ -175,6 +178,7 @@ export class BotService {
         nombreSesion: string,
         nro_whatsapp: string,
         pathFile: string,
+        nameFile: string,
     ) {
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
@@ -182,7 +186,8 @@ export class BotService {
             //document: fs.readFileSync('./public/avancesBiumsa.pdf'),
             document: fs.readFileSync('./public/' + pathFile),
             mimetype: 'application/pdf',
-            fileName: 'avancesBiumsa.pdf',
+            fileName: pathFile,
+            caption: `📄Aquí tienes el documento solicitado: \n  *${nameFile}* \n`,
         });
     }
 

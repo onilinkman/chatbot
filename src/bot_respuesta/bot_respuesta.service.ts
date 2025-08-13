@@ -4,6 +4,7 @@ import { UpdateBotRespuestaDto } from './dto/update-bot_respuesta.dto';
 import { BotRespuestaRepository } from './bot_respuesta.repository';
 import { BotRespuesta } from './entities/bot_respuesta.entity';
 import { SesionWhatsapp } from 'src/sesion_whatsapp/entities/sesion_whatsapp.entity';
+import { Archivo } from 'src/archivo/entities/archivo.entity';
 
 @Injectable()
 export class BotRespuestaService {
@@ -75,7 +76,7 @@ export class BotRespuestaService {
 
     async findOneByNro(nro: number, respuesta_origen: BotRespuesta) {
         const br = await this.botRespuestaRepository.findOne({
-            relations: ['respuestas'],
+            relations: ['respuestas', 'archivo'],
             where: {
                 nro,
                 eliminado: 0,
@@ -101,6 +102,22 @@ export class BotRespuestaService {
 
         const newBr = await this.botRespuestaRepository.save(oldbr);
         return newBr;
+    }
+
+    async saveFile(id_bot_respuesta: number, file: Express.Multer.File) {
+        const br = await this.botRespuestaRepository.findOne({
+            where: {
+                id_bot_respuesta,
+            },
+        });
+        const archivo = new Archivo();
+        if (!br) throw new Error('Error al guardar archivo');
+        archivo.bot_respuesta = br;
+        archivo.nombre_archivo = file.filename;
+        archivo.tipo = file.mimetype;
+        archivo.url = file.filename;
+        br.archivo = archivo;
+        return await this.botRespuestaRepository.save(br);
     }
 
     remove(id: number) {

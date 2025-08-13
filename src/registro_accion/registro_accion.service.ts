@@ -10,7 +10,7 @@ import { BotRespuestaService } from 'src/bot_respuesta/bot_respuesta.service';
 import DataModelBot from './dto/data-model_bot.dto';
 import { RegistroAccion } from './entities/registro_accion.entity';
 import { BotRespuesta } from 'src/bot_respuesta/entities/bot_respuesta.entity';
-import { OpcionesBot } from './dto/tipos_auxiliares';
+import { EjecutarAccionRespuesta, OpcionesBot } from './dto/tipos_auxiliares';
 
 @Injectable()
 export class RegistroAccionService {
@@ -25,7 +25,7 @@ export class RegistroAccionService {
         private botRespuestaService: BotRespuestaService,
     ) {
         this.mapOpcionesBot.set('/', this.mostrarAyuda);
-        this.mapOpcionesBot.set('/atras', this.volverUltimaAccion);
+        this.mapOpcionesBot.set('/ATRAS', this.volverUltimaAccion);
     }
 
     create(createRegistroAccionDto: CreateRegistroAccionDto) {
@@ -46,6 +46,7 @@ export class RegistroAccionService {
                     nro_telefono: rtr.nro_telefono,
                 },
             });
+            rtr.mensaje = rtr.mensaje.trim().toUpperCase();
             if (!telefono) {
                 const t = new Telefono();
                 t.codigo_region = rtr.codigo_region;
@@ -66,6 +67,7 @@ export class RegistroAccionService {
             const ra = await this.registroAccionRepository
                 .createQueryBuilder('registro')
                 .leftJoinAndSelect('registro.bot_respuesta', 'bot_respuesta')
+                .leftJoinAndSelect('bot_respuesta.archivo', 'archivo')
                 .leftJoinAndSelect('bot_respuesta.respuestas', 'respuestas')
                 .innerJoinAndSelect(
                     'registro.telefono',
@@ -101,6 +103,7 @@ export class RegistroAccionService {
                 dataModel.message = 'Se inicio una conversacion';
                 return dataModel;
             }
+
             if (isNaN(+rtr.mensaje)) {
                 dataModel.status = 404;
                 let t = await this.armarTexto(ra.bot_respuesta);
@@ -115,7 +118,16 @@ export class RegistroAccionService {
             if (!resp) {
                 dataModel.status = 404;
                 dataModel.body = 'No encontrado';
-                dataModel.message = 'No se pudo iniciarl la conversacion';
+                dataModel.message = 'No se pudo iniciar la conversacion';
+                return dataModel;
+            }
+
+            const archive = resp.archivo;
+
+            if (archive) {
+                dataModel.status = 222;
+                dataModel.body = archive.url;
+                dataModel.message = resp.mensaje;
                 return dataModel;
             }
 
@@ -124,10 +136,30 @@ export class RegistroAccionService {
                     resp.codigo_accion,
                     telefono,
                 );
+                const lastRa = await this.getUltimaRespuesta(telefono);
+                if (terminar.nro_accion == 2) {
+                    dataModel.status = 409;
+                    dataModel.body = 'Error al obtener el ultimo valor';
+                    dataModel.message = 'Se corto el flujo';
+                    if (!lastRa) return dataModel;
+                    dataModel.status = 201;
+                    dataModel.body = await this.armarTexto(
+                        lastRa.bot_respuesta,
+                    );
+                    dataModel.message = 'Se corto el flujo';
+                    return dataModel;
+                }
+                if (terminar.nro_accion == 1) {
+                    dataModel.status = 409;
+                    dataModel.body =
+                        'Se salio del chat bot exitosamente, si quiere comenzar una nueva conversacion escribe la palabra clave';
+                    dataModel.message = 'Se corto el flujo';
+                    return dataModel;
+                }
                 dataModel.status = 201;
                 dataModel.body = '';
                 dataModel.message = 'Se corto el flujo';
-                if (terminar) return dataModel;
+                if (terminar.continuar) return dataModel;
             }
 
             let text = await this.armarTexto(resp);
@@ -145,6 +177,25 @@ export class RegistroAccionService {
             const err = error as Error;
             throw new Error('Error al guardar registro: ' + err.message);
         }
+    }
+
+    async getUltimaRespuesta(telefono: Telefono) {
+        return await this.registroAccionRepository
+            .createQueryBuilder('registro')
+            .leftJoinAndSelect('registro.bot_respuesta', 'bot_respuesta')
+            .leftJoinAndSelect('bot_respuesta.respuestas', 'respuestas')
+            .innerJoinAndSelect(
+                'registro.telefono',
+                't',
+                't.id_telefono = :id_telefono',
+                {
+                    id_telefono: telefono.id_telefono,
+                },
+            )
+            .where('registro.eliminado=0')
+            .orderBy('registro.id_registro_accion', 'DESC')
+            .addOrderBy('respuestas.nro', 'ASC')
+            .getOne();
     }
 
     async armarTexto(br: BotRespuesta): Promise<string> {
@@ -191,7 +242,7 @@ export class RegistroAccionService {
     async ejecutarAccion(
         codigoAccion: string,
         telefono: Telefono,
-    ): Promise<boolean> {
+    ): Promise<EjecutarAccionRespuesta> {
         if ('eliminarChat' == codigoAccion) {
             const id_telefono = telefono.id_telefono;
             await this.registroAccionRepository
@@ -200,13 +251,22 @@ export class RegistroAccionService {
                 .set({ eliminado: 1 })
                 .where('id_telefono = :id_telefono', { id_telefono })
                 .execute();
-            return false;
+            return {
+                continuar: false,
+                nro_accion: 1,
+            };
         }
         if ('volverUltimaAccion' == codigoAccion) {
             await this.volverUltimaAccion('', telefono);
-            return true;
+            return {
+                continuar: true,
+                nro_accion: 2,
+            };
         }
-        return false;
+        return {
+            continuar: true,
+            nro_accion: 0,
+        };
     }
 
     volverUltimaAccion = async (text: string, telefono: Telefono) => {
