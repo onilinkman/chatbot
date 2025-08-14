@@ -100,7 +100,11 @@ export class BotService {
                 const restartRequired =
                     statusCode === DisconnectReason.restartRequired;
 
-                if (restartRequired) {
+                const timeOut = statusCode === DisconnectReason.timedOut;
+
+                console.log('Codigo de error de caida', statusCode);
+
+                if (restartRequired || timeOut) {
                     console.log(
                         `♻️ Reiniciando sesión ${nombreSesion} por error 515`,
                     );
@@ -120,7 +124,7 @@ export class BotService {
                 messages: newMessages,
                 syncType,
             }) => {
-                console.log('chats', newChats, newContacts, newMessages);
+                //console.log('chats', newChats, newContacts, newMessages);
             },
         );
         sock.ev.on('messages.upsert', async ({ type, messages }) => {
@@ -148,6 +152,22 @@ export class BotService {
         });
     }
 
+    getTextoMensaje(mensaje: proto.IWebMessageInfo): string {
+        const m = mensaje.message;
+
+        if (!m) return '';
+        if (m.conversation) return m.conversation;
+        if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+        if (m.imageMessage?.caption) return m.imageMessage.caption;
+        if (m.videoMessage?.caption) return m.videoMessage.caption;
+        if (m.buttonsResponseMessage?.selectedButtonId)
+            return m.buttonsResponseMessage.selectedButtonId;
+        if (m.listResponseMessage?.singleSelectReply?.selectedRowId)
+            return m.listResponseMessage.singleSelectReply.selectedRowId;
+
+        return '';
+    }
+
     async recibirMensajes(
         mensaje: proto.IWebMessageInfo,
         nombreSesion: string,
@@ -157,7 +177,7 @@ export class BotService {
         /* console.log('numero whatsapp:', nro_whatsapp, jid);
         console.log('nuevo', mensaje.message);
         console.log('mensaje', mensaje.message?.conversation); */
-        const msj = mensaje.message?.conversation ?? '';
+        const msj = this.getTextoMensaje(mensaje);
         const sock = this.mapSock.get(nombreSesion);
         if (!sock || !jid) throw new Error('Error al buscar cliente');
         const rtr = new RespuestaTelefonoRegistroDto();
