@@ -101,10 +101,12 @@ export class BotService {
                     statusCode === DisconnectReason.restartRequired;
 
                 const timeOut = statusCode === DisconnectReason.timedOut;
+                const unavailableService =
+                    statusCode === DisconnectReason.unavailableService;
 
                 console.log('Codigo de error de caida', statusCode);
 
-                if (restartRequired || timeOut) {
+                if (restartRequired || timeOut || unavailableService) {
                     console.log(
                         `♻️ Reiniciando sesión ${nombreSesion} por error 515`,
                     );
