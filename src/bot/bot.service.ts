@@ -11,6 +11,7 @@ import { RespuestaTelefonoRegistroDto } from 'src/registro_accion/dto/respuesta-
 import { RegistroAccionService } from 'src/registro_accion/registro_accion.service';
 import { SesionWhatsappService } from 'src/sesion_whatsapp/sesion_whatsapp.service';
 import * as fs from 'fs';
+import { logAlert } from 'src/Herramientas/herramienta.func';
 
 @Injectable()
 export class BotService {
@@ -103,11 +104,23 @@ export class BotService {
                 const timeOut = statusCode === DisconnectReason.timedOut;
                 const unavailableService =
                     statusCode === DisconnectReason.unavailableService;
+                const connectionClosed =
+                    statusCode === DisconnectReason.connectionClosed;
 
-                console.log('Codigo de error de caida', statusCode);
+                logAlert('Codigo de error de caida', statusCode);
 
-                if (restartRequired || timeOut || unavailableService) {
-                    console.log(
+                if (unavailableService || connectionClosed) {
+                    logAlert(
+                        '🚧 Servicio de WhatsApp no disponible, reintentando en 5s...',
+                    );
+                    setTimeout(() => {
+                        this.mapSock.delete(nombreSesion);
+                        this.conectarWhatsapp(nombreSesion, callback);
+                    }, 5000);
+                }
+
+                if (restartRequired || timeOut) {
+                    logAlert(
                         `♻️ Reiniciando sesión ${nombreSesion} por error 515`,
                     );
                     this.mapSock.delete(nombreSesion);
@@ -115,7 +128,7 @@ export class BotService {
                 }
             }
             if (connection == 'open') {
-                console.log('CONEXION ABIERTA');
+                logAlert('CONEXION ABIERTA');
             }
         });
         sock.ev.on(
@@ -204,13 +217,18 @@ export class BotService {
     ) {
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
-        await sock.sendMessage(nro_whatsapp, {
-            //document: fs.readFileSync('./public/avancesBiumsa.pdf'),
-            document: fs.readFileSync('./public/' + pathFile),
-            mimetype: 'application/pdf',
-            fileName: pathFile,
-            caption: `📄Aquí tienes el documento solicitado: \n  *${nameFile}* \n`,
-        });
+        try {
+            await sock.sendMessage(nro_whatsapp, {
+                //document: fs.readFileSync('./public/avancesBiumsa.pdf'),
+                document: fs.readFileSync('./public/' + pathFile),
+                mimetype: 'application/pdf',
+                fileName: pathFile,
+                caption: `📄Aquí tienes el documento solicitado: \n  *${nameFile}* \n`,
+            });
+        } catch (err) {
+            let error = err as Error;
+            logAlert('Hubo un error al enviar mensaje: ' + error.message);
+        }
     }
 
     async enviarMensaje(

@@ -20,7 +20,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
             host: process.env.DB_HOST ?? 'localhost',
             port: Number(process.env.DB_PORT ?? '1521'),
             username: process.env.DB_USERNAME ?? 'oracle',
-            password: process.env.DB_PWD ?? 'oracle10',
+            password: process.env.DB_PWD ?? 'orausu10',
             //sid: process.env.DB_SID ?? 'ORCLCDB',
             serviceName: process.env.DB_SID ?? 'ORCLCDB',
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
