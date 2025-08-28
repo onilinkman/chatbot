@@ -26,6 +26,14 @@ export class SesionWhatsappService {
     }
 
     findAll() {
+        return this.sesionWhatsappRepository.find({
+            where: {
+                eliminado: 0,
+            },
+        });
+    }
+
+    findAllAndDeletes() {
         return this.sesionWhatsappRepository.find();
     }
 
@@ -50,6 +58,27 @@ export class SesionWhatsappService {
             const err = error as Error;
             throw new InternalServerErrorException('error:', err.message);
         }
+    }
+
+    async deleteById(id: number, eliminado: number) {
+        try {
+            const sesion = await this.sesionWhatsappRepository.findOne({
+                where: {
+                    id_sesion_whatsapp: id,
+                },
+            });
+            if (!sesion) return null;
+            sesion.eliminado = eliminado;
+
+            return await this.sesionWhatsappRepository.save(sesion);
+        } catch (error) {
+            throw new error();
+        }
+    }
+
+    async deleteBySession(sesion: SesionWhatsapp, eliminado: number) {
+        sesion.eliminado = eliminado;
+        return await this.sesionWhatsappRepository.save(sesion);
     }
 
     remove(id: number) {

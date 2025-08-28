@@ -13,7 +13,6 @@ import {
     Unique,
 } from 'typeorm';
 
-@Unique(['nro', 'respuesta_origen'])
 @Entity({ name: 'BOT_RESPUESTA' })
 export class BotRespuesta {
     @PrimaryGeneratedColumn()

@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Post,
+    Put,
+    Req,
+    Res,
+} from '@nestjs/common';
 import { BotService } from './bot.service';
 import { Request, Response } from 'express';
 import PostMensajeDto from './dto/post-mensaje.dto';
@@ -56,5 +66,44 @@ export class BotController {
         return response.status(200).send({
             mensaje: 'hola',
         }); */
+    }
+
+    @Delete('/sesion/:id')
+    deleteSesionWhatsapp(@Param('id') id_sesion: number, @Res() res: Response) {
+        let apiResponse = new ApiResponse();
+        try {
+            this.botService.deleteSesionWhatsapp(id_sesion, 1);
+            apiResponse.status = 200;
+            apiResponse.body = 'Se inhabilito correctamente';
+            apiResponse.mensaje = 'Se rehabilito correctamente';
+            res.status(apiResponse.status).send(apiResponse);
+        } catch (error) {
+            const err = error as Error;
+            apiResponse.status = 409;
+            apiResponse.body = 'Error al inhabilitar: ' + err.message;
+            apiResponse.mensaje = 'Error al inhabilitar: ' + err.message;
+            res.status(apiResponse.status).send(apiResponse);
+        }
+    }
+
+    @Put('/restaurar/:id')
+    restoreSesionWhatsapp(
+        @Param('id') id_sesion: number,
+        @Res() res: Response,
+    ) {
+        let apiResponse = new ApiResponse();
+        try {
+            this.botService.restoreSesionWhatsapp(id_sesion);
+            apiResponse.status = 200;
+            apiResponse.body = 'Se habilito correctamente';
+            apiResponse.mensaje = 'Se habilito correctamente';
+            res.status(apiResponse.status).send(apiResponse);
+        } catch (error) {
+            const err = error as Error;
+            apiResponse.status = 409;
+            apiResponse.body = 'Error al habilitar: ' + err.message;
+            apiResponse.mensaje = 'Error al habilitar: ' + err.message;
+            res.status(apiResponse.status).send(apiResponse);
+        }
     }
 }

@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBotRespuestaDto } from './dto/create-bot_respuesta.dto';
 import { UpdateBotRespuestaDto } from './dto/update-bot_respuesta.dto';
 import { BotRespuestaRepository } from './bot_respuesta.repository';
 import { BotRespuesta } from './entities/bot_respuesta.entity';
 import { SesionWhatsapp } from 'src/sesion_whatsapp/entities/sesion_whatsapp.entity';
 import { Archivo } from 'src/archivo/entities/archivo.entity';
+import { ArchivoService } from 'src/archivo/archivo.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class BotRespuestaService {
     constructor(
         private readonly botRespuestaRepository: BotRespuestaRepository,
+        private archivoService: ArchivoService,
     ) {}
 
     create(createBotRespuestaDto: CreateBotRespuestaDto) {
@@ -68,7 +72,12 @@ export class BotRespuestaService {
 
     async findOne(id: number) {
         const br = await this.botRespuestaRepository.find({
-            relations: ['respuestas', 'respuesta_origen', 'sesionWhatsapp'],
+            relations: [
+                'respuestas',
+                'respuesta_origen',
+                'sesionWhatsapp',
+                'archivo',
+            ],
             where: { id_bot_respuesta: id },
         });
         return br;
@@ -99,9 +108,41 @@ export class BotRespuestaService {
 
         oldbr.mensaje = updateBotRespuestaDto.mensaje;
         oldbr.presentacion = updateBotRespuestaDto.presentacion;
+        oldbr.codigo_accion = updateBotRespuestaDto.codigo_accion;
 
         const newBr = await this.botRespuestaRepository.save(oldbr);
         return newBr;
+    }
+
+    async deleteFile(id_bot_respuesta: number) {
+        const archivo = await this.archivoService.findOne(id_bot_respuesta);
+        if (!archivo) {
+            throw new Error('No se encontro el archivo que desea eliminar');
+        }
+        try {
+            const filepath = path.join('./public', archivo?.url);
+            if (this.existFile(archivo?.url)) {
+                await this.borrarArchivo(filepath);
+            }
+            await this.archivoService.remove(id_bot_respuesta);
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    existFile(ruta: string): boolean {
+        const filepath = path.join('./public', ruta);
+        return fs.existsSync(filepath);
+    }
+
+    async borrarArchivo(ruta: string): Promise<boolean> {
+        try {
+            await fs.promises.access(ruta);
+            await fs.promises.unlink(ruta);
+            return true;
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     async saveFile(id_bot_respuesta: number, file: Express.Multer.File) {

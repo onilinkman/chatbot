@@ -1,26 +1,43 @@
 import { Injectable } from '@nestjs/common';
 import { CreateArchivoDto } from './dto/create-archivo.dto';
 import { UpdateArchivoDto } from './dto/update-archivo.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Archivo } from './entities/archivo.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ArchivoService {
-  create(createArchivoDto: CreateArchivoDto) {
-    return 'This action adds a new archivo';
-  }
+    constructor(
+        @InjectRepository(Archivo)
+        private archivoRepository: Repository<Archivo>,
+    ) {}
 
-  findAll() {
-    return `This action returns all archivo`;
-  }
+    create(createArchivoDto: CreateArchivoDto) {
+        return 'This action adds a new archivo';
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} archivo`;
-  }
+    findAll() {
+        return `This action returns all archivo`;
+    }
 
-  update(id: number, updateArchivoDto: UpdateArchivoDto) {
-    return `This action updates a #${id} archivo`;
-  }
+    async findOne(id: number) {
+        return await this.archivoRepository.findOne({
+            where: {
+                id_bot_respuesta: id,
+            },
+        });
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} archivo`;
-  }
+    update(id: number, updateArchivoDto: UpdateArchivoDto) {
+        return `This action updates a #${id} archivo`;
+    }
+
+    remove(id: number) {
+        return this.archivoRepository
+            .createQueryBuilder()
+            .delete()
+            .from(Archivo)
+            .where('id_bot_respuesta = :id', { id })
+            .execute();
+    }
 }

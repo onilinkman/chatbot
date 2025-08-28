@@ -8,5 +8,6 @@ import { Archivo } from './entities/archivo.entity';
     imports: [TypeOrmModule.forFeature([Archivo])],
     controllers: [ArchivoController],
     providers: [ArchivoService],
+    exports: [ArchivoService],
 })
 export class ArchivoModule {}

@@ -6,11 +6,16 @@ import {
     Patch,
     Param,
     Delete,
+    Res,
 } from '@nestjs/common';
 import { RegistroAccionService } from './registro_accion.service';
 import { CreateRegistroAccionDto } from './dto/create-registro_accion.dto';
 import { UpdateRegistroAccionDto } from './dto/update-registro_accion.dto';
 import { RespuestaTelefonoRegistroDto } from './dto/respuesta-telefono-registro.dto';
+import { Response } from 'express';
+import { ApiResponse } from 'src/models';
+import { Telefono } from 'src/telefono/entities/telefono.entity';
+import { EjecutarAccionRespuesta } from './dto/tipos_auxiliares';
 
 @Controller('api/registro-accion')
 export class RegistroAccionController {
@@ -31,6 +36,17 @@ export class RegistroAccionController {
     @Post('buscarRegistroAccion')
     buscarRegistroAccion(@Body() rtr: RespuestaTelefonoRegistroDto) {
         return this.registroAccionService.registroAccion(rtr);
+    }
+
+    @Get('acciones')
+    getAcciones(@Res() res: Response) {
+        const apiResponse = new ApiResponse<String[]>();
+        const mea = this.registroAccionService.getMapEjecutarAcciones();
+        let acciones: String[] = [...mea.keys()];
+        apiResponse.body = acciones;
+        apiResponse.status = 200;
+        apiResponse.mensaje = 'Se obtuvo la lista de acciones correctamente';
+        return res.status(apiResponse.status).send(apiResponse);
     }
 
     @Get(':id')

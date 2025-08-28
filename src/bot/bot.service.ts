@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import makeWASocket, {
     DisconnectReason,
     proto,
@@ -37,6 +37,21 @@ export class BotService {
     ) {
         await this.borrarArchivoSesion(nombreSesion);
         await this.conectarWhatsapp(nombreSesion, callback);
+    }
+
+    async deleteSesionWhatsapp(id: number, eliminado: number) {
+        try {
+            const sw = await this.sesionesWhatsapp.findOne(id);
+            if (!sw) throw new NotFoundException('Sesion no encontrada');
+            await this.borrarArchivoSesion(sw.nombre_sesion);
+            return await this.sesionesWhatsapp.deleteBySession(sw, eliminado);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async restoreSesionWhatsapp(id: number) {
+        return await this.sesionesWhatsapp.deleteById(id, 0);
     }
 
     async borrarArchivoSesion(nombreSesion: string) {
@@ -111,12 +126,12 @@ export class BotService {
 
                 if (unavailableService || connectionClosed) {
                     logAlert(
-                        '🚧 Servicio de WhatsApp no disponible, reintentando en 5s...',
+                        '🚧 Servicio de WhatsApp no disponible, reintentando en 2s...',
                     );
                     setTimeout(() => {
                         this.mapSock.delete(nombreSesion);
                         this.conectarWhatsapp(nombreSesion, callback);
-                    }, 5000);
+                    }, 2000);
                 }
 
                 if (restartRequired || timeOut) {
@@ -203,8 +218,12 @@ export class BotService {
             this.enviarArchivo(nombreSesion, jid, ra.body, ra.message);
             return;
         }
-
-        await sock.sendMessage(jid, { text: ra.body });
+        try {
+            await sock.sendMessage(jid, { text: ra.body });
+        } catch (err) {
+            let error = err as Error;
+            logAlert('Hubo un error al enviar mensaje: ' + error.message);
+        }
 
         //mensaje.key.fromMe   --si el mensaje viene de mi mismo
     }
@@ -240,10 +259,15 @@ export class BotService {
         if (!sock) return 'no inicio el servicio de whatsapp';
 
         const jid = nro_whatsapp + '@s.whatsapp.net';
-
-        await sock.sendMessage(jid, {
-            text: mensaje,
-        });
-        return { mensaje: 'mensaje enviado' };
+        try {
+            await sock.sendMessage(jid, {
+                text: mensaje,
+            });
+            return { mensaje: 'mensaje enviado' };
+        } catch (err) {
+            let error = err as Error;
+            logAlert('Hubo un error al enviar mensaje: ' + error.message);
+            return { mensaje: 'Error al enviar mensaje: ' + error.message };
+        }
     }
 }

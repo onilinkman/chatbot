@@ -31,7 +31,7 @@ export class SesionWhatsappController {
         try {
             const myRes = new ApiResponse<SesionWhatsapp[]>();
             myRes.status = 200;
-            myRes.body = await this.sesionWhatsappService.findAll();
+            myRes.body = await this.sesionWhatsappService.findAllAndDeletes();
             myRes.mensaje = 'Se obtuvo correctamente';
 
             return res.status(myRes.status).send(myRes);

@@ -18,6 +18,11 @@ export class RegistroAccionService {
         String,
         (text: string, telefono: Telefono) => Promise<OpcionesBot>
     > = new Map();
+    mapEjecutarAccion: Map<
+        string,
+        (telefono: Telefono) => Promise<EjecutarAccionRespuesta>
+    > = new Map();
+
     constructor(
         private readonly registroAccionRepository: RegistroAccionRepository,
         @InjectRepository(Telefono)
@@ -26,6 +31,13 @@ export class RegistroAccionService {
     ) {
         this.mapOpcionesBot.set('/', this.mostrarAyuda);
         this.mapOpcionesBot.set('/ATRAS', this.volverUltimaAccion);
+        this.mapOpcionesBot.set('/SALIR', this.salirDelBot);
+
+        this.mapEjecutarAccion.set('eliminarChat', this.accionEliminarChat);
+        this.mapEjecutarAccion.set(
+            'volverUltimaAccion',
+            this.accionVolverUltimoAccion,
+        );
     }
 
     create(createRegistroAccionDto: CreateRegistroAccionDto) {
@@ -243,31 +255,56 @@ export class RegistroAccionService {
         codigoAccion: string,
         telefono: Telefono,
     ): Promise<EjecutarAccionRespuesta> {
-        if ('eliminarChat' == codigoAccion) {
-            const id_telefono = telefono.id_telefono;
-            await this.registroAccionRepository
-                .createQueryBuilder()
-                .update()
-                .set({ eliminado: 1 })
-                .where('id_telefono = :id_telefono', { id_telefono })
-                .execute();
-            return {
-                continuar: false,
-                nro_accion: 1,
-            };
-        }
-        if ('volverUltimaAccion' == codigoAccion) {
-            await this.volverUltimaAccion('', telefono);
+        const mea = this.mapEjecutarAccion.get(codigoAccion);
+        if (!mea) {
             return {
                 continuar: true,
-                nro_accion: 2,
+                nro_accion: 0,
             };
         }
+        let ar = await mea(telefono);
+        return ar;
+    }
+
+    accionEliminarChat = async (
+        telefono: Telefono,
+    ): Promise<EjecutarAccionRespuesta> => {
+        const id_telefono = telefono.id_telefono;
+        await this.registroAccionRepository
+            .createQueryBuilder()
+            .update()
+            .set({ eliminado: 1 })
+            .where('id_telefono = :id_telefono', { id_telefono })
+            .execute();
+        return {
+            continuar: false,
+            nro_accion: 1,
+        };
+    };
+
+    accionVolverUltimoAccion = async (
+        telefono: Telefono,
+    ): Promise<EjecutarAccionRespuesta> => {
+        await this.volverUltimaAccion('', telefono);
         return {
             continuar: true,
-            nro_accion: 0,
+            nro_accion: 2,
         };
-    }
+    };
+
+    salirDelBot = async (text: string, telefono: Telefono) => {
+        const id_telefono = telefono.id_telefono;
+        await this.registroAccionRepository
+            .createQueryBuilder()
+            .update()
+            .set({ eliminado: 1 })
+            .where('id_telefono = :id_telefono', { id_telefono })
+            .execute();
+        return {
+            terminar: true,
+            msg: 'Se salio del chat',
+        };
+    };
 
     volverUltimaAccion = async (text: string, telefono: Telefono) => {
         const ra = await this.registroAccionRepository.findOne({
@@ -329,4 +366,8 @@ export class RegistroAccionService {
     remove(id: number) {
         return `This action removes a #${id} registroAccion`;
     }
+
+    getMapEjecutarAcciones = () => {
+        return this.mapEjecutarAccion;
+    };
 }

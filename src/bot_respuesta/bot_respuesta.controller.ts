@@ -9,6 +9,7 @@ import {
     Put,
     UploadedFile,
     UseInterceptors,
+    Res,
 } from '@nestjs/common';
 import { BotRespuestaService } from './bot_respuesta.service';
 import { CreateBotRespuestaDto } from './dto/create-bot_respuesta.dto';
@@ -19,6 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { Response } from 'express';
 
 @Controller('api/bot-respuesta')
 export class BotRespuestaController {
@@ -47,13 +49,48 @@ export class BotRespuestaController {
             }),
         }),
     )
-    uploadFile(
+    async uploadFile(
         @UploadedFile() file: Express.Multer.File,
         @Param('id') id_bot_respuesta: number,
+        @Res() res: Response,
     ) {
-        console.log(file);
-        this.botRespuestaService.saveFile(id_bot_respuesta, file);
-        return { message: 'Archivo recibido', originalName: file.originalname };
+        const apiResponse = new ApiResponse<String>();
+        try {
+            await this.botRespuestaService.saveFile(id_bot_respuesta, file);
+            apiResponse.body = 'Archivo guardado: ' + file.originalname;
+            apiResponse.status = 201;
+            apiResponse.mensaje = 'Se guardo correctamente';
+
+            return res.status(apiResponse.status).send(apiResponse);
+        } catch (error) {
+            const err = error as Error;
+            apiResponse.body = 'No se pudo guardar el archivo correctamente';
+            apiResponse.status = 409;
+            apiResponse.mensaje = 'Error al guardar el archivo: ' + err.message;
+            return res.status(apiResponse.status).send(apiResponse);
+        }
+    }
+
+    @Delete('/deleteFile/:id')
+    async deleteFile(
+        @Param('id') id_bot_respuesta: number,
+        @Res() res: Response,
+    ) {
+        const apiResponse = new ApiResponse<String>();
+        try {
+            let df =
+                await this.botRespuestaService.deleteFile(id_bot_respuesta);
+            apiResponse.mensaje = 'Eliminado correctamente';
+            apiResponse.body = 'siiiiii';
+            apiResponse.status = 200;
+            return res.status(apiResponse.status).send(apiResponse);
+        } catch (error) {
+            let err = error as Error;
+            apiResponse.mensaje = 'No se elimino correctamente: ' + err.message;
+            apiResponse.body = 'Error al eliminar';
+            apiResponse.status = 409;
+            return res.status(apiResponse.status).send(apiResponse);
+        }
     }
 
     @Get(':id')

@@ -4,9 +4,11 @@ import { BotRespuestaController } from './bot_respuesta.controller';
 import { DataSource } from 'typeorm';
 import { BotRespuestaRepository } from './bot_respuesta.repository';
 import { BotRespuesta } from './entities/bot_respuesta.entity';
+import { ArchivoModule } from 'src/archivo/archivo.module';
 
 @Module({
     controllers: [BotRespuestaController],
+    imports: [ArchivoModule],
     providers: [
         {
             provide: BotRespuestaRepository,
