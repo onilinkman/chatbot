@@ -50,6 +50,7 @@ export class RegistroAccionService {
 
     async registroAccion(
         rtr: RespuestaTelefonoRegistroDto,
+        nombreSesion: string,
     ): Promise<DataModelBot<string>> {
         const dataModel: DataModelBot<string> = new DataModelBot<string>();
         try {
@@ -81,6 +82,12 @@ export class RegistroAccionService {
                 .leftJoinAndSelect('registro.bot_respuesta', 'bot_respuesta')
                 .leftJoinAndSelect('bot_respuesta.archivo', 'archivo')
                 .leftJoinAndSelect('bot_respuesta.respuestas', 'respuestas')
+                .innerJoin(
+                    'bot_respuesta.sesionWhatsapp',
+                    'sw',
+                    'sw.nombre_sesion = :nombreSesion',
+                    { nombreSesion },
+                )
                 .innerJoinAndSelect(
                     'registro.telefono',
                     't',
@@ -92,11 +99,13 @@ export class RegistroAccionService {
                 .where('registro.eliminado=0')
                 .orderBy('registro.id_registro_accion', 'DESC')
                 .addOrderBy('respuestas.nro', 'ASC')
+                .cache(true)
                 .getOne();
 
             if (!ra) {
                 const br = await this.botRespuestaService.findOneByMessage(
                     rtr.mensaje,
+                    nombreSesion,
                 );
                 if (!br) {
                     dataModel.status = 404;

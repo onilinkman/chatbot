@@ -62,11 +62,15 @@ export class BotRespuestaService {
         return br;
     }
 
-    async findOneByMessage(mensaje: string) {
-        const br = await this.botRespuestaRepository.findOne({
-            relations: ['respuestas'],
-            where: { mensaje, eliminado: 0 },
-        });
+    async findOneByMessage(mensaje: string, nombre_sesion: string) {
+        const br = await this.botRespuestaRepository
+            .createQueryBuilder('br')
+            .leftJoinAndSelect('br.respuestas', 'respuestas')
+            .leftJoinAndSelect('br.sesionWhatsapp', 'sw')
+            .where('br.mensaje = :mensaje', { mensaje })
+            .andWhere('br.eliminado = 0')
+            .andWhere('sw.nombre_sesion = :nombre_sesion', { nombre_sesion })
+            .getOne();
         return br;
     }
 

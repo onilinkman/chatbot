@@ -13,36 +13,60 @@ import { BotService } from './bot.service';
 import { Request, Response } from 'express';
 import PostMensajeDto from './dto/post-mensaje.dto';
 import { ApiResponse } from 'src/models';
+import EnviarMensajeDto from './dto/enviar-mensaje.dto';
+import { logAlert } from 'src/Herramientas/herramienta.func';
 
-@Controller('api/bot')
+@Controller('whatsapp')
 export class BotController {
     constructor(private readonly botService: BotService) {}
 
-    /* @Get()
-  getAllBots() {
-    return this.botService.enviarMensaje();
-  } */
+    @Post('/enviarMensaje')
+    async enviarMensaje(@Body() body: EnviarMensajeDto, @Res() res: Response) {
+        try {
+            await this.botService.enviarMensaje(
+                'client-one',
+                `591${body.telefono}`,
+                body.mensaje,
+            );
+            logAlert(
+                'mensaje directo por "/enviarMensaje": ' +
+                    `591${body.telefono} ${body.mensaje}`,
+            );
+            return res.status(200).send('Mensaje enviado correctamente');
+        } catch (error) {
+            const err = error as Error;
+            return res.status(409).send('Error al enviar: ' + err.message);
+        }
+    }
 
-    @Post('/enviar/:clientName')
+    @Post('/enviarMensaje/:clientName')
     async postMensaje(
-        @Body() postMensajeDto: PostMensajeDto,
+        @Body() postMensajeDto: EnviarMensajeDto,
         @Param('clientName') clientName: string,
+        @Res() res: Response,
     ) {
         //Nota: enviar con este formato: 59179161442@s.whatsapp.net
         const myRes = new ApiResponse<String>();
         try {
             await this.botService.enviarMensaje(
                 clientName,
-                postMensajeDto.nro_telefono,
+                `591${postMensajeDto.telefono}`,
                 postMensajeDto.mensaje,
             );
-            myRes.status = 201;
+            logAlert(
+                `mensaje directo por "${clientName}": ` +
+                    `591${postMensajeDto.telefono} ${postMensajeDto.mensaje}`,
+            );
+            myRes.status = 200;
             myRes.mensaje = 'Se envio mensaje correctamente';
             myRes.body = 'Mensaje enviado';
-            return myRes;
+            return res.status(myRes.status).send(myRes);
         } catch (error) {
             const err = error as Error;
-            return { body: 'error: ' + err.message };
+            myRes.status = 409;
+            myRes.mensaje = 'Error al enviar mensaje: ' + err.message;
+            myRes.body = 'Error al enviar mensaje: ' + err.message;
+            return res.status(myRes.status).send(myRes);
         }
     }
 

@@ -15,7 +15,7 @@ import { ApiResponse } from 'src/models';
 import { SesionWhatsapp } from './entities/sesion_whatsapp.entity';
 import { Response } from 'express';
 
-@Controller('api/sesion-whatsapp')
+@Controller('sesion-whatsapp')
 export class SesionWhatsappController {
     constructor(
         private readonly sesionWhatsappService: SesionWhatsappService,

@@ -22,7 +22,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Response } from 'express';
 
-@Controller('api/bot-respuesta')
+@Controller('bot-respuesta')
 export class BotRespuestaController {
     constructor(private readonly botRespuestaService: BotRespuestaService) {}
 

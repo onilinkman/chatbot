@@ -13,7 +13,7 @@ import { CreatePersonaDto } from './dto/create-persona.dto';
 import { UpdatePersonaDto } from './dto/update-persona.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 
-@Controller('api/persona')
+@Controller('persona')
 export class PersonaController {
     constructor(private readonly personaService: PersonaService) {}
 

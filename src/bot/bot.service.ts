@@ -16,12 +16,23 @@ import { logAlert } from 'src/Herramientas/herramienta.func';
 @Injectable()
 export class BotService {
     private mapSock: Map<String, WASocket> = new Map();
+    private mapResponseText: Map<string, string> = new Map();
 
     constructor(
         private registroAccionService: RegistroAccionService,
         private sesionesWhatsapp: SesionWhatsappService,
     ) {
         this.conectarAlIniciar();
+        this.startCleanupTask();
+    }
+
+    private startCleanupTask() {
+        setInterval(
+            () => {
+                this.mapResponseText.clear();
+            },
+            5 * 60 * 1000,
+        );
     }
 
     async conectarAlIniciar() {
@@ -213,13 +224,22 @@ export class BotService {
         const rtr = new RespuestaTelefonoRegistroDto();
         rtr.nro_telefono = jid.split('@')[0];
         rtr.mensaje = msj;
-        const ra = await this.registroAccionService.registroAccion(rtr);
+        const ra = await this.registroAccionService.registroAccion(
+            rtr,
+            nombreSesion,
+        );
         if (ra.status == 222) {
             this.enviarArchivo(nombreSesion, jid, ra.body, ra.message);
             return;
         }
         try {
-            await sock.sendMessage(jid, { text: ra.body });
+            if (
+                !this.mapResponseText.get(jid) ||
+                this.mapResponseText.get(jid) != ra.body
+            ) {
+                this.mapResponseText.set(jid, ra.body);
+                await sock.sendMessage(jid, { text: ra.body });
+            }
         } catch (err) {
             let error = err as Error;
             logAlert('Hubo un error al enviar mensaje: ' + error.message);
@@ -256,9 +276,15 @@ export class BotService {
         mensaje: string,
     ) {
         const sock = this.mapSock.get(nombreSesion);
-        if (!sock) return 'no inicio el servicio de whatsapp';
+        if (!sock) throw new Error('no inicio el servicio de whatsapp');
 
         const jid = nro_whatsapp + '@s.whatsapp.net';
+
+        const result = await sock.onWhatsApp(jid);
+
+        if (!result || result.length < 1)
+            throw new Error('Numero no registrado en whatsapp ' + nro_whatsapp);
+
         try {
             await sock.sendMessage(jid, {
                 text: mensaje,
@@ -267,7 +293,8 @@ export class BotService {
         } catch (err) {
             let error = err as Error;
             logAlert('Hubo un error al enviar mensaje: ' + error.message);
-            return { mensaje: 'Error al enviar mensaje: ' + error.message };
+            throw err;
+            //return { mensaje: 'Error al enviar mensaje: ' + error.message };
         }
     }
 }

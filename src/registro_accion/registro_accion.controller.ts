@@ -17,7 +17,7 @@ import { ApiResponse } from 'src/models';
 import { Telefono } from 'src/telefono/entities/telefono.entity';
 import { EjecutarAccionRespuesta } from './dto/tipos_auxiliares';
 
-@Controller('api/registro-accion')
+@Controller('registro-accion')
 export class RegistroAccionController {
     constructor(
         private readonly registroAccionService: RegistroAccionService,
@@ -33,9 +33,12 @@ export class RegistroAccionController {
         return this.registroAccionService.findAll();
     }
 
-    @Post('buscarRegistroAccion')
-    buscarRegistroAccion(@Body() rtr: RespuestaTelefonoRegistroDto) {
-        return this.registroAccionService.registroAccion(rtr);
+    @Post('buscarRegistroAccion/:nombreSesion')
+    buscarRegistroAccion(
+        @Body() rtr: RespuestaTelefonoRegistroDto,
+        @Param('nombreSesion') nombreSesion: string,
+    ) {
+        return this.registroAccionService.registroAccion(rtr,nombreSesion);
     }
 
     @Get('acciones')
