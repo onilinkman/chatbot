@@ -10,6 +10,9 @@ import { TelefonoModule } from './telefono/telefono.module';
 import { RegistroAccionModule } from './registro_accion/registro_accion.module';
 import { ArchivoModule } from './archivo/archivo.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { EndpointModule } from './endpoint/endpoint.module';
+import { ParametroModule } from './parametro/parametro.module';
+import { ParamRespuestaModule } from './param_respuesta/param_respuesta.module';
 
 @Module({
     imports: [
@@ -36,6 +39,9 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
         RegistroAccionModule,
         ArchivoModule,
         WhatsappModule,
+        EndpointModule,
+        ParametroModule,
+        ParamRespuestaModule,
     ],
     controllers: [],
     providers: [],

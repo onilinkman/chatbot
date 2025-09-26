@@ -1,10 +1,12 @@
 import { BotRespuesta } from 'src/bot_respuesta/entities/bot_respuesta.entity';
+import { ParamRespuesta } from 'src/param_respuesta/entities/param_respuesta.entity';
 import { Telefono } from 'src/telefono/entities/telefono.entity';
 import {
     Column,
     Entity,
     JoinColumn,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -24,13 +26,19 @@ export class RegistroAccion {
         () => BotRespuesta,
         (bot_respuesta) => bot_respuesta.registro_acciones,
     )
-	@JoinColumn({name:"id_bot_respuesta"})
+    @JoinColumn({ name: 'id_bot_respuesta' })
     bot_respuesta: BotRespuesta;
 
-	@Column({
+    @Column({
         type: 'timestamp',
         name: 'fecha_registro',
         default: () => 'CURRENT_TIMESTAMP',
     })
-	fecha_registro:Date;
+    fecha_registro: Date;
+
+    @OneToMany(
+        () => ParamRespuesta,
+        (paramRespuesta) => paramRespuesta.registro_accion,
+    )
+    paramRespuestas: ParamRespuesta[];
 }

@@ -1,4 +1,5 @@
 import { Archivo } from 'src/archivo/entities/archivo.entity';
+import { Endpoint } from 'src/endpoint/entities/endpoint.entity';
 import { RegistroAccion } from 'src/registro_accion/entities/registro_accion.entity';
 import { SesionWhatsapp } from 'src/sesion_whatsapp/entities/sesion_whatsapp.entity';
 import {
@@ -54,4 +55,7 @@ export class BotRespuesta {
         cascade: true,
     })
     archivo: Archivo;
+
+    @OneToOne(() => Endpoint, (endpoint) => endpoint.bot_respuesta)
+    endpoint: Endpoint;
 }
