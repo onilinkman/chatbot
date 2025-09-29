@@ -12,6 +12,8 @@ import { RegistroAccion } from './entities/registro_accion.entity';
 import { BotRespuesta } from 'src/bot_respuesta/entities/bot_respuesta.entity';
 import { EjecutarAccionRespuesta, OpcionesBot } from './dto/tipos_auxiliares';
 import { RegistrandoEndpointDto } from './dto/registrando-endpoint.dto';
+import CacheEndpoint from './dto/cache-endpoint.dto';
+import PostMethodUrlImage from './dto/PostMethodUrlImage.dto';
 
 @Injectable()
 export class RegistroAccionService {
@@ -24,10 +26,7 @@ export class RegistroAccionService {
         (telefono: Telefono) => Promise<EjecutarAccionRespuesta>
     > = new Map();
 
-    private mapParamsEndpoint: Map<
-        string,
-        Map<string, RegistrandoEndpointDto>
-    > = new Map();
+    private mapParamsEndpoint: Map<string, CacheEndpoint> = new Map();
 
     constructor(
         private readonly registroAccionRepository: RegistroAccionRepository,
@@ -57,15 +56,16 @@ export class RegistroAccionService {
     async registroAccion(
         rtr: RespuestaTelefonoRegistroDto,
         nombreSesion: string,
-    ): Promise<DataModelBot<string>> {
-        const dataModel: DataModelBot<string> = new DataModelBot<string>();
+    ): Promise<DataModelBot<string | PostMethodUrlImage>> {
+        const dataModel: DataModelBot<string | PostMethodUrlImage> =
+            new DataModelBot<string | PostMethodUrlImage>();
         try {
             let telefono = await this.telefonoRepository.findOne({
                 where: {
                     nro_telefono: rtr.nro_telefono,
                 },
             });
-            rtr.mensaje = rtr.mensaje.trim().toUpperCase();
+
             if (!telefono) {
                 const t = new Telefono();
                 t.codigo_region = rtr.codigo_region;
@@ -73,7 +73,10 @@ export class RegistroAccionService {
                 telefono = await this.telefonoRepository.save(t);
             }
 
-            let fn = await this.elegirOpcionBot(rtr.mensaje, telefono);
+            let fn = await this.elegirOpcionBot(
+                rtr.mensaje.trim().toUpperCase(),
+                telefono,
+            );
 
             if (fn.terminar) {
                 dataModel.status = 201;
@@ -90,6 +93,8 @@ export class RegistroAccionService {
                     telefono,
                 );
             }
+
+            rtr.mensaje = rtr.mensaje.trim().toUpperCase();
 
             //
             const ra = await this.registroAccionRepository
@@ -162,6 +167,8 @@ export class RegistroAccionService {
             }
 
             if (resp.endpoint && resp.endpoint.parametros) {
+                const cacheEndpoint = new CacheEndpoint();
+                cacheEndpoint.endpoint = resp.endpoint;
                 const newMap = new Map<string, RegistrandoEndpointDto>();
                 const parametros = resp.endpoint.parametros;
                 parametros.forEach((value) => {
@@ -170,7 +177,11 @@ export class RegistroAccionService {
                     re.respuesta = null;
                     newMap.set(value.nombre, re);
                 });
-                this.mapParamsEndpoint.set(telefono.nro_telefono, newMap);
+                cacheEndpoint.mapRegistroEndpoint = newMap;
+                this.mapParamsEndpoint.set(
+                    telefono.nro_telefono,
+                    cacheEndpoint,
+                );
                 dataModel.body = parametros[0].descripcion;
                 dataModel.status = 201;
                 dataModel.message = 'Se esta armando el endpoint';
@@ -263,39 +274,81 @@ export class RegistroAccionService {
             .getOne();
     }
 
-    obtenerEndpoint(
+    async obtenerEndpoint(
         nro_telefono: string,
         mensaje: string,
         telefono: Telefono,
-    ): DataModelBot<string> {
+    ): Promise<DataModelBot<string | PostMethodUrlImage>> {
         const m = this.mapParamsEndpoint.get(nro_telefono);
-        const dataModel = new DataModelBot<string>();
+        const dataModel = new DataModelBot<string | PostMethodUrlImage>();
         if (m) {
             let sw = true;
-            m.forEach((value) => {
+            const arr = Array.from(m.mapRegistroEndpoint.values());
+            for (let i = 0; i < arr.length; i++) {
+                const value = arr[i];
                 if (!value.respuesta && sw) {
                     value.respuesta = mensaje;
                     sw = false;
+                    if (arr[i + 1]) {
+                        dataModel.body = arr[i + 1].parametro.descripcion;
+                        break;
+                    } else {
+                        sw = true;
+                    }
                 }
-            });
-            console.log(m);
-            let sw2 = true;
-            m.forEach((value) => {
-                if (!value.respuesta && sw2) {
-                    sw2 = false;
-                    dataModel.body = value.parametro.descripcion;
-                }
-            });
-            if (sw && sw2) {
+            }
+            if (sw) {
                 dataModel.body = 'aqui la imagen o qr';
+                const postMethod = await this.armarBodyJson(nro_telefono);
                 this.getLimpiarMapMemoriaTelefono(nro_telefono);
-                this.accionVolverUltimoAccion(telefono);
+
+                if (!postMethod) {
+                    dataModel.body = 'No se encontro qr';
+                    dataModel.message = 'No se encontro qr';
+                    dataModel.status = 404;
+                    return dataModel;
+                }
+                dataModel.body = postMethod;
+                dataModel.status = 223;
+                dataModel.message = 'generado correctamente';
+
+                return dataModel;
+                //this.accionVolverUltimoAccion(telefono);
             }
         }
         dataModel.status = 201;
         dataModel.message = 'Se pregunto de nuevo';
         return dataModel;
     }
+
+    armarBodyJson = async (nro_telefono: string) => {
+        const cacheEndpoint = this.mapParamsEndpoint.get(nro_telefono);
+        if (!cacheEndpoint) {
+            return;
+        }
+        const url = cacheEndpoint.endpoint.url;
+        const method = cacheEndpoint.endpoint.metodo;
+        const atributos: { [key: string]: string | number } = {};
+        cacheEndpoint.mapRegistroEndpoint.forEach((value) => {
+            if (value.respuesta) {
+                atributos[value.parametro.nombre] = value.respuesta;
+            }
+        });
+        if (cacheEndpoint.endpoint.tipo === 'url_img') {
+            try {
+                const pago: PostMethodUrlImage = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(atributos),
+                }).then((data) => data.json());
+                return pago;
+            } catch (error) {
+                throw error;
+            }
+        }
+    };
 
     async armarTexto(br: BotRespuesta): Promise<string> {
         let text = br.presentacion + '\n';

@@ -12,6 +12,8 @@ import { RegistroAccionService } from 'src/registro_accion/registro_accion.servi
 import { SesionWhatsappService } from 'src/sesion_whatsapp/sesion_whatsapp.service';
 import * as fs from 'fs';
 import { logAlert } from 'src/Herramientas/herramienta.func';
+import { fetchBaileysImage } from './tools/fetchBaylisImg';
+import PostMethodUrlImage from 'src/registro_accion/dto/PostMethodUrlImage.dto';
 
 @Injectable()
 export class BotService {
@@ -228,14 +230,26 @@ export class BotService {
             rtr,
             nombreSesion,
         );
-        if (ra.status == 222) {
+        if (ra.status == 222 && typeof ra.body == 'string') {
             this.enviarArchivo(nombreSesion, jid, ra.body, ra.message);
             return;
         }
+
+        if (ra.status == 223 && typeof ra.body == 'object') {
+            this.enviarUrlImagen(
+                nombreSesion,
+                jid,
+                ra.body.url_image,
+                ra.body.descripcion,
+            );
+            return;
+        }
+
         try {
             if (
-                !this.mapResponseText.get(jid) ||
-                this.mapResponseText.get(jid) != ra.body
+                (!this.mapResponseText.get(jid) ||
+                    this.mapResponseText.get(jid) != ra.body) &&
+                typeof ra.body == 'string'
             ) {
                 this.mapResponseText.set(jid, ra.body);
                 await sock.sendMessage(jid, { text: ra.body });
@@ -246,6 +260,29 @@ export class BotService {
         }
 
         //mensaje.key.fromMe   --si el mensaje viene de mi mismo
+    }
+
+    async enviarUrlImagen(
+        nombreSesion: string,
+        nro_whatsapp: string,
+        url_image: string,
+        descripcion: string,
+    ) {
+        const sock = this.mapSock.get(nombreSesion);
+        if (!sock) return 'no inicio el servicio de whatsapp';
+
+        const { data, mimetype, fileName } = await fetchBaileysImage(url_image);
+        try {
+            await sock.sendMessage(nro_whatsapp, {
+                image: data,
+                fileName,
+                mimetype: mimetype,
+                caption: `${descripcion} \n`,
+            });
+        } catch (err) {
+            let error = err as Error;
+            logAlert('Hubo un error al enviar mensaje: ' + error.message);
+        }
     }
 
     async enviarArchivo(
