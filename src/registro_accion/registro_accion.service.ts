@@ -84,7 +84,11 @@ export class RegistroAccionService {
             }
 
             if (this.mapParamsEndpoint?.get(rtr.nro_telefono)) {
-                return this.obtenerEndpoint(rtr.nro_telefono, rtr.mensaje,telefono);
+                return this.obtenerEndpoint(
+                    rtr.nro_telefono,
+                    rtr.mensaje,
+                    telefono,
+                );
             }
 
             //
@@ -261,7 +265,8 @@ export class RegistroAccionService {
 
     obtenerEndpoint(
         nro_telefono: string,
-        mensaje: string,telefono:Telefono
+        mensaje: string,
+        telefono: Telefono,
     ): DataModelBot<string> {
         const m = this.mapParamsEndpoint.get(nro_telefono);
         const dataModel = new DataModelBot<string>();
@@ -281,11 +286,11 @@ export class RegistroAccionService {
                     dataModel.body = value.parametro.descripcion;
                 }
             });
-			if(sw && sw2){
-				dataModel.body="aqui la imagen o qr";
-				this.getLimpiarMapMemoriaTelefono(nro_telefono);
-				this.accionVolverUltimoAccion(telefono);
-			}
+            if (sw && sw2) {
+                dataModel.body = 'aqui la imagen o qr';
+                this.getLimpiarMapMemoriaTelefono(nro_telefono);
+                this.accionVolverUltimoAccion(telefono);
+            }
         }
         dataModel.status = 201;
         dataModel.message = 'Se pregunto de nuevo';
@@ -453,7 +458,7 @@ export class RegistroAccionService {
         return this.mapEjecutarAccion;
     };
 
-	getLimpiarMapMemoriaTelefono=(nro_telefono:string)=>{
-		this.mapParamsEndpoint.delete(nro_telefono);
-	}
+    getLimpiarMapMemoriaTelefono = (nro_telefono: string) => {
+        this.mapParamsEndpoint.delete(nro_telefono);
+    };
 }
