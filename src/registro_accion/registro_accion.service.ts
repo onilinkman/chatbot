@@ -11,6 +11,7 @@ import DataModelBot from './dto/data-model_bot.dto';
 import { RegistroAccion } from './entities/registro_accion.entity';
 import { BotRespuesta } from 'src/bot_respuesta/entities/bot_respuesta.entity';
 import { EjecutarAccionRespuesta, OpcionesBot } from './dto/tipos_auxiliares';
+import { RegistrandoEndpointDto } from './dto/registrando-endpoint.dto';
 
 @Injectable()
 export class RegistroAccionService {
@@ -21,6 +22,11 @@ export class RegistroAccionService {
     mapEjecutarAccion: Map<
         string,
         (telefono: Telefono) => Promise<EjecutarAccionRespuesta>
+    > = new Map();
+
+    private mapParamsEndpoint: Map<
+        string,
+        Map<string, RegistrandoEndpointDto>
     > = new Map();
 
     constructor(
@@ -77,11 +83,17 @@ export class RegistroAccionService {
                 return dataModel;
             }
 
+            if (this.mapParamsEndpoint?.get(rtr.nro_telefono)) {
+                return this.obtenerEndpoint(rtr.nro_telefono, rtr.mensaje,telefono);
+            }
+
+            //
             const ra = await this.registroAccionRepository
                 .createQueryBuilder('registro')
                 .leftJoinAndSelect('registro.bot_respuesta', 'bot_respuesta')
                 .leftJoinAndSelect('bot_respuesta.archivo', 'archivo')
                 .leftJoinAndSelect('bot_respuesta.respuestas', 'respuestas')
+                .leftJoin('bot_respuesta.endpoint', 'endpoint')
                 .innerJoin(
                     'bot_respuesta.sesionWhatsapp',
                     'sw',
@@ -124,7 +136,9 @@ export class RegistroAccionService {
                 dataModel.message = 'Se inicio una conversacion';
                 return dataModel;
             }
+            //aqui vemos si la respuesta tenia un endpoint
 
+            //#####################################
             if (isNaN(+rtr.mensaje)) {
                 dataModel.status = 404;
                 let t = await this.armarTexto(ra.bot_respuesta);
@@ -143,6 +157,22 @@ export class RegistroAccionService {
                 return dataModel;
             }
 
+            if (resp.endpoint && resp.endpoint.parametros) {
+                const newMap = new Map<string, RegistrandoEndpointDto>();
+                const parametros = resp.endpoint.parametros;
+                parametros.forEach((value) => {
+                    const re = new RegistrandoEndpointDto();
+                    re.parametro = value;
+                    re.respuesta = null;
+                    newMap.set(value.nombre, re);
+                });
+                this.mapParamsEndpoint.set(telefono.nro_telefono, newMap);
+                dataModel.body = parametros[0].descripcion;
+                dataModel.status = 201;
+                dataModel.message = 'Se esta armando el endpoint';
+                return dataModel;
+            }
+
             const archive = resp.archivo;
 
             if (archive) {
@@ -157,7 +187,10 @@ export class RegistroAccionService {
                     resp.codigo_accion,
                     telefono,
                 );
-                const lastRa = await this.getUltimaRespuesta(telefono);
+                const lastRa = await this.getUltimaRespuesta(
+                    telefono,
+                    nombreSesion,
+                );
                 if (terminar.nro_accion == 2) {
                     dataModel.status = 409;
                     dataModel.body = 'Error al obtener el ultimo valor';
@@ -200,11 +233,18 @@ export class RegistroAccionService {
         }
     }
 
-    async getUltimaRespuesta(telefono: Telefono) {
+    async getUltimaRespuesta(telefono: Telefono, nombreSesion: string) {
         return await this.registroAccionRepository
             .createQueryBuilder('registro')
             .leftJoinAndSelect('registro.bot_respuesta', 'bot_respuesta')
             .leftJoinAndSelect('bot_respuesta.respuestas', 'respuestas')
+            .innerJoin(
+                'bot_respuesta.sesionWhatsapp',
+                'sw',
+                'sw.nombre_sesion = :nombreSesion',
+                { nombreSesion },
+            )
+            .leftJoin('bot_respuesta.endpoint', 'endpoint')
             .innerJoinAndSelect(
                 'registro.telefono',
                 't',
@@ -217,6 +257,39 @@ export class RegistroAccionService {
             .orderBy('registro.id_registro_accion', 'DESC')
             .addOrderBy('respuestas.nro', 'ASC')
             .getOne();
+    }
+
+    obtenerEndpoint(
+        nro_telefono: string,
+        mensaje: string,telefono:Telefono
+    ): DataModelBot<string> {
+        const m = this.mapParamsEndpoint.get(nro_telefono);
+        const dataModel = new DataModelBot<string>();
+        if (m) {
+            let sw = true;
+            m.forEach((value) => {
+                if (!value.respuesta && sw) {
+                    value.respuesta = mensaje;
+                    sw = false;
+                }
+            });
+            console.log(m);
+            let sw2 = true;
+            m.forEach((value) => {
+                if (!value.respuesta && sw2) {
+                    sw2 = false;
+                    dataModel.body = value.parametro.descripcion;
+                }
+            });
+			if(sw && sw2){
+				dataModel.body="aqui la imagen o qr";
+				this.getLimpiarMapMemoriaTelefono(nro_telefono);
+				this.accionVolverUltimoAccion(telefono);
+			}
+        }
+        dataModel.status = 201;
+        dataModel.message = 'Se pregunto de nuevo';
+        return dataModel;
     }
 
     async armarTexto(br: BotRespuesta): Promise<string> {
@@ -379,4 +452,8 @@ export class RegistroAccionService {
     getMapEjecutarAcciones = () => {
         return this.mapEjecutarAccion;
     };
+
+	getLimpiarMapMemoriaTelefono=(nro_telefono:string)=>{
+		this.mapParamsEndpoint.delete(nro_telefono);
+	}
 }

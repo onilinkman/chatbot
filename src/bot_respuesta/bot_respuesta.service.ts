@@ -89,7 +89,7 @@ export class BotRespuestaService {
 
     async findOneByNro(nro: number, respuesta_origen: BotRespuesta) {
         const br = await this.botRespuestaRepository.findOne({
-            relations: ['respuestas', 'archivo'],
+            relations: ['respuestas', 'archivo','endpoint','endpoint.parametros'],
             where: {
                 nro,
                 eliminado: 0,

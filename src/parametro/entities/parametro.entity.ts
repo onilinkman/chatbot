@@ -6,12 +6,12 @@ import {
     JoinColumn,
     ManyToOne,
     OneToMany,
-    PrimaryColumn,
+	PrimaryGeneratedColumn,
 } from 'typeorm';
 
 @Entity({ name: 'PARAMETRO' })
 export class Parametro {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
     id_parametro: number;
 
     @Column({ type: 'varchar2', length: 50 })
@@ -26,7 +26,9 @@ export class Parametro {
     @Column({ type: 'number', default: 0 })
     eliminado: number;
 
-    @ManyToOne(() => Endpoint, (endpoint) => endpoint.parametros)
+    @ManyToOne(() => Endpoint, (endpoint) => endpoint.parametros, {
+        onDelete: 'CASCADE',
+    })
     @JoinColumn({ name: 'id_bot_respuesta' })
     endpoint: Endpoint;
 

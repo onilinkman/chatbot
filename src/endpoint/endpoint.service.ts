@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Endpoint } from './entities/endpoint.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BotRespuesta } from 'src/bot_respuesta/entities/bot_respuesta.entity';
+import { Parametro } from 'src/parametro/entities/parametro.entity';
 
 @Injectable()
 export class EndpointService {
@@ -23,8 +24,16 @@ export class EndpointService {
                         : createEndpointDto.parametros,
             };
             const endpoint: Endpoint = this.endpointRepository.create(dto);
+            endpoint.parametros = [];
             const botRespuesta: BotRespuesta = new BotRespuesta();
             botRespuesta.id_bot_respuesta = createEndpointDto.id_bot_respuesta;
+            dto.parametros?.forEach((value) => {
+                const param_respuesta = new Parametro();
+                param_respuesta.nombre = value.nombre;
+                param_respuesta.descripcion = value.descripcion;
+                param_respuesta.tipo = value.tipo;
+                endpoint.parametros.push(param_respuesta);
+            });
             endpoint.bot_respuesta = botRespuesta;
             await this.endpointRepository.save(endpoint);
             return endpoint;
