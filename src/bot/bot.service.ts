@@ -264,16 +264,24 @@ export class BotService {
 
     async enviarUrlImagen(
         nombreSesion: string,
-        nro_whatsapp: string,
+        jid: string,
         url_image: string,
         descripcion: string,
     ) {
+        if (!url_image) {
+            this.enviarMensaje(
+                nombreSesion,
+                jid,
+                'No se genero la url correctamente',
+            );
+            return;
+        }
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) return 'no inicio el servicio de whatsapp';
 
         const { data, mimetype, fileName } = await fetchBaileysImage(url_image);
         try {
-            await sock.sendMessage(nro_whatsapp, {
+            await sock.sendMessage(jid, {
                 image: data,
                 fileName,
                 mimetype: mimetype,
@@ -315,7 +323,9 @@ export class BotService {
         const sock = this.mapSock.get(nombreSesion);
         if (!sock) throw new Error('no inicio el servicio de whatsapp');
 
-        const jid = nro_whatsapp + '@s.whatsapp.net';
+        const nw = nro_whatsapp.replace('@s.whatsapp.net', ''); // por si acaso :v
+
+        const jid = nw + '@s.whatsapp.net';
 
         const result = await sock.onWhatsApp(jid);
 
